@@ -62,6 +62,9 @@ RUN pnpm install --frozen-lockfile
 # Copy application code
 COPY . .
 
+# Windows checkouts can carry CRLF into repo scripts and translation files and break Linux builds and init tasks.
+RUN find bin script contrib .devcontainer i18n -type f -exec sed -i 's/\r$//' {} +
+
 # Append build information to the Zammad VERSION.
 RUN if [ -z "${COMMIT_SHA}" ]; then \
     echo "Error: the required build argument \$COMMIT_SHA is missing."; \
