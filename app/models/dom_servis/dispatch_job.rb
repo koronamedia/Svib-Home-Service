@@ -1,0 +1,147 @@
+# Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
+
+class DomServis::DispatchJob < ApplicationModel
+  self.table_name = 'dom_servis_dispatch_jobs'
+
+  STATUSES   = %w[pool taken in_progress done cancelled].freeze
+  PRIORITIES = %w[low medium high critical].freeze
+  SOURCES    = %w[manual ai].freeze
+  VISIT_DAYS = %w[mon tue wed thu fri sat sun].freeze
+
+  VISIT_DAY_LABELS = {
+    'mon' => 'Пн',
+    'tue' => 'Вт',
+    'wed' => 'Ср',
+    'thu' => 'Чт',
+    'fri' => 'Пт',
+    'sat' => 'Сб',
+    'sun' => 'Вс',
+  }.freeze
+
+  belongs_to :created_by, class_name: 'User', optional: true
+  belongs_to :updated_by, class_name: 'User', optional: true
+  belongs_to :assignee, class_name: 'User', optional: true
+  belongs_to :ticket, optional: true
+
+  has_many :events,
+           class_name: 'DomServis::DispatchEvent',
+           foreign_key: :dispatch_job_id,
+           inverse_of: :dispatch_job,
+           dependent: :destroy
+
+  validates :status, inclusion: { in: STATUSES }
+  validates :priority, inclusion: { in: PRIORITIES }
+  validates :source, inclusion: { in: SOURCES }
+  validates :visit_day, inclusion: { in: VISIT_DAYS }
+  validates :service_type, presence: true
+  validates :address, presence: true
+
+  before_validation :apply_defaults
+  before_validation :assign_job_code
+  before_validation :normalize_work_tags
+  before_validation :sync_lifecycle_timestamps
+
+  scope :ordered_recent, -> { order(created_at: :desc, id: :desc) }
+  scope :pool_visible, -> { where(status: 'pool', assignee_id: nil) }
+
+  def self.search(query:, limit: 50, offset: 0, **)
+    scoped = ordered_recent
+    if query.present?
+      like_query = "%#{query}%"
+      scoped = scoped.where(
+        'service_type ILIKE :query OR address ILIKE :query OR client_name ILIKE :query OR client_phone ILIKE :query',
+        query: like_query
+      )
+    end
+
+    {
+      objects:     scoped.offset(offset).limit(limit),
+      total_count: scoped.count,
+    }
+  end
+
+  def ui_url
+    "#manage/dom_servis_dispatch/id:#{id}"
+  end
+
+  private
+
+  def apply_defaults
+    self.status = 'pool' if status.blank?
+    self.priority = 'medium' if priority.blank?
+    self.source = 'manual' if source.blank?
+    self.visit_day = infer_visit_day if visit_day.blank?
+    self.published_at ||= Time.zone.now if status == 'pool'
+  end
+
+  def assign_job_code
+    return if job_code.present?
+
+    timestamp = created_at || Time.zone.now
+
+    loop do
+      candidate = "#{timestamp.strftime('%Y%m%d')}-#{format('%04d', SecureRandom.random_number(10_000))}"
+      next if self.class.exists?(job_code: candidate)
+
+      self.job_code = candidate
+      return
+    end
+  end
+
+  def normalize_work_tags
+    tags =
+      case work_tags
+      when Array
+        work_tags
+      when String
+        work_tags.split(',')
+      else
+        []
+      end
+
+    self.work_tags = tags.filter_map do |value|
+      normalized = value.to_s.strip
+      normalized.presence
+    end.uniq.first(10)
+  end
+
+  def sync_lifecycle_timestamps
+    self.taken_at = nil if status == 'pool'
+    self.completed_at = nil if status != 'done'
+    self.cancelled_at = nil if status != 'cancelled'
+
+    self.taken_at ||= Time.zone.now if %w[taken in_progress done].include?(status) && assignee_id.present?
+    self.completed_at ||= Time.zone.now if status == 'done'
+    self.cancelled_at ||= Time.zone.now if status == 'cancelled'
+  end
+
+  def infer_visit_day
+    return weekday_key_from_date(visit_date) if visit_date.present?
+
+    case (created_at || Time.zone.now).wday
+    when 1 then 'mon'
+    when 2 then 'tue'
+    when 3 then 'wed'
+    when 4 then 'thu'
+    when 5 then 'fri'
+    when 6 then 'sat'
+    else 'sun'
+    end
+  end
+
+  def weekday_key_from_date(value)
+    parsed_date = Date.parse(value.to_s)
+
+    case parsed_date.wday
+    when 1 then 'mon'
+    when 2 then 'tue'
+    when 3 then 'wed'
+    when 4 then 'thu'
+    when 5 then 'fri'
+    when 6 then 'sat'
+    else 'sun'
+    end
+  rescue ArgumentError
+    'mon'
+  end
+end

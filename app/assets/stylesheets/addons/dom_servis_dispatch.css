@@ -1,0 +1,777 @@
+.dom-servis-dispatch-board {
+  background:
+    radial-gradient(circle at top left, rgba(70, 104, 255, 0.18), transparent 28%),
+    linear-gradient(180deg, #181c26 0%, #20242d 100%);
+  min-height: 100%;
+}
+
+.dom-servis-dispatch-board__shell,
+.dom-servis-dispatch-admin {
+  padding: 28px 32px 40px;
+}
+
+.dom-servis-dispatch-board__hero {
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(26, 31, 48, 0.96), rgba(34, 39, 57, 0.94));
+  border: 1px solid rgba(110, 124, 170, 0.28);
+  border-radius: 26px;
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.22);
+  display: flex;
+  gap: 28px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding: 24px 26px;
+}
+
+.dom-servis-dispatch-board__eyebrow {
+  color: #7f8dff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-board__hero-copy h1 {
+  color: #f3f6fb;
+  font-size: 34px;
+  line-height: 1;
+  margin: 0 0 12px;
+}
+
+.dom-servis-dispatch-board__hero-copy p {
+  color: #b9c0ce;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 740px;
+}
+
+.dom-servis-dispatch-board__hero-side {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dom-servis-dispatch-board__role {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(140, 151, 180, 0.22);
+  border-radius: 16px;
+  min-width: 220px;
+  padding: 12px 14px;
+}
+
+.dom-servis-dispatch-board__role span {
+  color: #9aa5bb;
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-board__role strong {
+  color: #f4f7fc;
+  display: block;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.dom-servis-dispatch-board__header-actions,
+.dom-servis-dispatch-admin__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dom-servis-dispatch-board .btn--primary,
+.dom-servis-dispatch-admin .btn--primary {
+  background: #5677ff;
+  border-color: #5677ff;
+  color: #fff;
+}
+
+.dom-servis-dispatch-board .btn--danger,
+.dom-servis-dispatch-admin .btn--danger {
+  background: #8e3d4d;
+  border-color: #8e3d4d;
+  color: #fff;
+}
+
+.dom-servis-dispatch-board__stats,
+.dom-servis-dispatch-admin__cards {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 20px;
+}
+
+.dom-servis-dispatch-stat,
+.dom-servis-dispatch-admin-card {
+  background: rgba(27, 31, 40, 0.82);
+  border: 1px solid rgba(79, 86, 104, 0.5);
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.dom-servis-dispatch-stat__label,
+.dom-servis-dispatch-admin-card span {
+  color: #97a0b0;
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-stat__value,
+.dom-servis-dispatch-admin-card strong {
+  color: #f5f7fb;
+  display: block;
+  font-size: 30px;
+  line-height: 1.1;
+  margin-top: 10px;
+}
+
+.dom-servis-dispatch-board__control-block {
+  margin-bottom: 18px;
+}
+
+.dom-servis-dispatch-board__control-label {
+  color: #94a1ba;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-board__filters,
+.dom-servis-dispatch-board__day-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dom-servis-dispatch-board__week-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dom-servis-dispatch-board__week-actions,
+.dom-servis-dispatch-board__week-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dom-servis-dispatch-board__week-summary strong {
+  color: #edf1f7;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.dom-servis-dispatch-board__week-summary .form-control {
+  min-width: 170px;
+}
+
+.dom-servis-dispatch-board__filters .btn,
+.dom-servis-dispatch-board__day-filters .btn {
+  align-items: center;
+  background: rgba(40, 44, 55, 0.86);
+  border: 1px solid rgba(77, 84, 102, 0.7);
+  border-radius: 14px;
+  color: #c8cfdb;
+  display: inline-flex;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.dom-servis-dispatch-board__filters .btn strong,
+.dom-servis-dispatch-board__day-filters .btn strong {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  min-width: 24px;
+  padding: 2px 7px;
+}
+
+.dom-servis-dispatch-board__filters .btn.is-active,
+.dom-servis-dispatch-board__day-filters .btn.is-active {
+  background: linear-gradient(135deg, #657cff, #7c5cff);
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(100, 105, 255, 0.28);
+  color: #fff;
+}
+
+.dom-servis-dispatch-board__grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+.dom-servis-dispatch-card {
+  background: linear-gradient(180deg, rgba(29, 34, 44, 0.96), rgba(36, 42, 52, 0.96));
+  border: 1px solid rgba(87, 96, 118, 0.56);
+  border-radius: 24px;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.dom-servis-dispatch-card--pool {
+  border-color: rgba(59, 214, 145, 0.7);
+}
+
+.dom-servis-dispatch-card--taken,
+.dom-servis-dispatch-card--in_progress {
+  border-color: rgba(244, 187, 73, 0.78);
+}
+
+.dom-servis-dispatch-card--done {
+  border-color: rgba(72, 144, 255, 0.7);
+}
+
+.dom-servis-dispatch-card--cancelled {
+  border-color: rgba(215, 95, 124, 0.72);
+}
+
+.dom-servis-dispatch-card__topline,
+.dom-servis-dispatch-card__identity,
+.dom-servis-dispatch-card__badge-row,
+.dom-servis-dispatch-card__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.dom-servis-dispatch-card__identity {
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.dom-servis-dispatch-card__code,
+.dom-servis-dispatch-card__day {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-card__code {
+  background: rgba(120, 126, 145, 0.16);
+  color: #d5dce8;
+}
+
+.dom-servis-dispatch-card__day {
+  background: rgba(97, 124, 255, 0.16);
+  color: #91a6ff;
+}
+
+.dom-servis-dispatch-card__status,
+.dom-servis-dispatch-card__priority,
+.dom-servis-dispatch-card__tag {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-card__status--pool {
+  background: rgba(62, 207, 144, 0.16);
+  color: #59da98;
+}
+
+.dom-servis-dispatch-card__status--taken,
+.dom-servis-dispatch-card__status--in_progress {
+  background: rgba(244, 187, 73, 0.18);
+  color: #f4c55d;
+}
+
+.dom-servis-dispatch-card__status--done {
+  background: rgba(72, 144, 255, 0.18);
+  color: #83b0ff;
+}
+
+.dom-servis-dispatch-card__status--cancelled {
+  background: rgba(215, 95, 124, 0.18);
+  color: #f08aa0;
+}
+
+.dom-servis-dispatch-card__priority--low {
+  background: rgba(58, 205, 145, 0.16);
+  color: #63d5a0;
+}
+
+.dom-servis-dispatch-card__priority--medium {
+  background: rgba(77, 164, 255, 0.16);
+  color: #8bc0ff;
+}
+
+.dom-servis-dispatch-card__priority--high {
+  background: rgba(244, 187, 73, 0.16);
+  color: #f5cb6d;
+}
+
+.dom-servis-dispatch-card__priority--critical {
+  background: rgba(244, 94, 94, 0.16);
+  color: #ff9090;
+}
+
+.dom-servis-dispatch-card__tag {
+  background: rgba(255, 255, 255, 0.05);
+  color: #c7cfdb;
+  text-transform: none;
+}
+
+.dom-servis-dispatch-card__title {
+  color: #f5f7fc;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dom-servis-dispatch-card__address {
+  color: #d2d8e1;
+  font-size: 14px;
+}
+
+.dom-servis-dispatch-card__meta,
+.dom-servis-dispatch-card__contact {
+  color: #9da8bb;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 12px;
+}
+
+.dom-servis-dispatch-card__description,
+.dom-servis-dispatch-card__comment {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(83, 90, 106, 0.36);
+  border-radius: 16px;
+  color: #d0d6df;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 12px 14px;
+}
+
+.dom-servis-dispatch-card__comment strong {
+  color: #f2f5fb;
+}
+
+.dom-servis-dispatch-card__quick-edit {
+  background: rgba(18, 22, 30, 0.34);
+  border: 1px solid rgba(83, 90, 106, 0.38);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 12px;
+}
+
+.dom-servis-dispatch-card__quick-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dom-servis-dispatch-card__quick-edit label span {
+  color: #99a4ba;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-card__quick-edit .form-control,
+.dom-servis-dispatch-modal .form-control {
+  background: rgba(58, 64, 79, 0.88);
+  border: 1px solid rgba(92, 101, 123, 0.75);
+  border-radius: 12px;
+  color: #f4f7fc;
+}
+
+.dom-servis-dispatch-card__actions {
+  justify-content: flex-start;
+  margin-top: auto;
+}
+
+.dom-servis-dispatch-card__actions .btn--text {
+  border-color: rgba(96, 107, 132, 0.7);
+  color: #d8deea;
+}
+
+.dom-servis-dispatch-board__empty {
+  align-items: center;
+  background: rgba(31, 35, 44, 0.84);
+  border: 1px dashed rgba(90, 97, 115, 0.7);
+  border-radius: 22px;
+  color: #ccd3df;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  min-height: 260px;
+}
+
+.dom-servis-dispatch-board__alert {
+  margin-bottom: 16px;
+}
+
+.dom-servis-dispatch-admin__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.dom-servis-dispatch-admin__header h1 {
+  color: #f3f5f7;
+  margin: 0 0 8px;
+}
+
+.dom-servis-dispatch-admin__header p,
+.dom-servis-dispatch-modal__header p {
+  color: #aab1bb;
+  margin: 6px 0 0;
+}
+
+.dom-servis-dispatch-admin__note {
+  background: #2a2d33;
+  border: 1px solid #3b3f46;
+  border-radius: 16px;
+  color: #c9cfd8;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 24px;
+}
+
+.dom-servis-dispatch-admin__section {
+  margin-top: 22px;
+}
+
+.dom-servis-dispatch-admin__section-head {
+  margin-bottom: 14px;
+}
+
+.dom-servis-dispatch-admin__section-head h2,
+.dom-servis-dispatch-admin__matrix-title {
+  color: #f3f5f7;
+  margin: 0 0 6px;
+}
+
+.dom-servis-dispatch-admin__section-head p,
+.dom-servis-dispatch-admin__cell-hint,
+.dom-servis-dispatch-admin__role-card p {
+  color: #aab1bb;
+  margin: 0;
+}
+
+.dom-servis-dispatch-admin__role-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dom-servis-dispatch-admin__role-card,
+.dom-servis-dispatch-admin__matrix-block {
+  background: rgba(27, 31, 40, 0.82);
+  border: 1px solid rgba(79, 86, 104, 0.5);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.dom-servis-dispatch-admin__role-title {
+  color: #f5f7fb;
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.dom-servis-dispatch-admin__role-line {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dom-servis-dispatch-admin__role-line span {
+  color: #97a0b0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-admin__role-line strong {
+  color: #f5f7fb;
+  font-size: 13px;
+}
+
+.dom-servis-dispatch-admin__matrix-block + .dom-servis-dispatch-admin__matrix-block {
+  margin-top: 16px;
+}
+
+.dom-servis-dispatch-admin__matrix-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.dom-servis-dispatch-admin__matrix-table th,
+.dom-servis-dispatch-admin__matrix-table td {
+  border-top: 1px solid rgba(75, 83, 101, 0.56);
+  padding: 12px 10px;
+  vertical-align: top;
+}
+
+.dom-servis-dispatch-admin__matrix-table thead th {
+  border-top: 0;
+  color: #9aa4b8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-admin__cell-title {
+  align-items: center;
+  color: #f4f7fc;
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dom-servis-dispatch-admin__badge {
+  background: rgba(97, 124, 255, 0.14);
+  border-radius: 999px;
+  color: #9db2ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-admin__toggle-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dom-servis-dispatch-admin__toggle {
+  display: inline-flex;
+  justify-content: center;
+  position: relative;
+}
+
+.dom-servis-dispatch-admin__toggle input {
+  height: 18px;
+  width: 18px;
+}
+
+.dom-servis-dispatch-admin__toggle span {
+  display: none;
+}
+
+.dom-servis-dispatch-modal {
+  inset: 0;
+  position: fixed;
+  z-index: 80;
+}
+
+.dom-servis-dispatch-modal__backdrop {
+  background: rgba(8, 10, 16, 0.78);
+  inset: 0;
+  position: absolute;
+}
+
+.dom-servis-dispatch-modal__dialog {
+  background: linear-gradient(180deg, #232939 0%, #2b3140 100%);
+  border: 1px solid rgba(93, 103, 126, 0.76);
+  border-radius: 22px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  margin: 42px auto;
+  position: relative;
+  width: min(780px, calc(100vw - 40px));
+  z-index: 1;
+}
+
+.dom-servis-dispatch-modal__dialog--wide {
+  width: min(1040px, calc(100vw - 40px));
+}
+
+.dom-servis-dispatch-modal__header,
+.dom-servis-dispatch-modal__footer {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px 22px;
+}
+
+.dom-servis-dispatch-modal__header {
+  border-bottom: 1px solid rgba(90, 98, 119, 0.6);
+}
+
+.dom-servis-dispatch-modal__header h2 {
+  color: #f5f7fa;
+  font-size: 24px;
+  margin: 0;
+}
+
+.dom-servis-dispatch-modal__body {
+  padding: 22px;
+}
+
+.dom-servis-dispatch-modal__section + .dom-servis-dispatch-modal__section {
+  margin-top: 24px;
+}
+
+.dom-servis-dispatch-modal__section-title {
+  color: #f3f6fb;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-modal__group-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dom-servis-dispatch-modal__field--wide {
+  grid-column: 1 / -1;
+}
+
+.dom-servis-dispatch-modal__columns {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dom-servis-dispatch-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.dom-servis-dispatch-modal .form-group label {
+  color: #c9cfd8;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-modal__readonly {
+  align-items: flex-start;
+  background: rgba(58, 64, 79, 0.5);
+  border: 1px solid rgba(92, 101, 123, 0.55);
+  border-radius: 12px;
+  color: #f4f7fc;
+  display: flex;
+  min-height: 44px;
+  padding: 12px 14px;
+  white-space: pre-line;
+}
+
+.dom-servis-dispatch-modal__readonly.is-unsupported {
+  color: #f0c88a;
+}
+
+.dom-servis-dispatch-modal__field-hint {
+  color: #99a6ba;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.dom-servis-dispatch-modal__hint {
+  color: #99a6ba;
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 360px;
+}
+
+.dom-servis-dispatch-modal__footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .dom-servis-dispatch-board__stats,
+  .dom-servis-dispatch-admin__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .dom-servis-dispatch-board__hero,
+  .dom-servis-dispatch-admin__header,
+  .dom-servis-dispatch-board__hero-side,
+  .dom-servis-dispatch-modal__footer {
+    flex-direction: column;
+  }
+
+  .dom-servis-dispatch-board__hero-side {
+    align-items: stretch;
+  }
+
+  .dom-servis-dispatch-board__stats,
+  .dom-servis-dispatch-admin__cards,
+  .dom-servis-dispatch-admin__role-grid,
+  .dom-servis-dispatch-card__quick-edit,
+  .dom-servis-dispatch-modal__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dom-servis-dispatch-board__shell,
+  .dom-servis-dispatch-admin {
+    padding: 18px;
+  }
+
+  .dom-servis-dispatch-board__stats,
+  .dom-servis-dispatch-admin__cards,
+  .dom-servis-dispatch-admin__role-grid,
+  .dom-servis-dispatch-card__quick-edit,
+  .dom-servis-dispatch-modal__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dom-servis-dispatch-board__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dom-servis-dispatch-modal__dialog {
+    width: calc(100vw - 20px);
+  }
+
+  .dom-servis-dispatch-modal__footer-actions {
+    width: 100%;
+  }
+}
