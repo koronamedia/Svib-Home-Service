@@ -29,6 +29,7 @@ class DomServisDispatch extends App.ControllerSubContent
       statuses: {}
       fields: {}
 
+    @tags = []
     @loading = true
     @saving = false
     @dirty = false
@@ -48,6 +49,7 @@ class DomServisDispatch extends App.ControllerSubContent
       dirty:    @dirty
       error:    @errorMessage
       stats:    @stats
+      tags:     @tags
       registry: @registry
       policy:   @policy
     )
@@ -63,6 +65,7 @@ class DomServisDispatch extends App.ControllerSubContent
       url:  "#{@apiPath}/dom_servis/dispatch/admin_policy"
       success: (data) =>
         @stats = data?.stats || @stats
+        @tags = data?.tags || @tags
         @registry = data?.registry || @registry
         @policy = data?.policy || @policy
         @loading = false

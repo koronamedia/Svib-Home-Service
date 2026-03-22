@@ -4,6 +4,8 @@ class App.DomServisDispatchBoard extends App.Controller
   events:
     'click .js-status-filter': 'setStatusFilter'
     'click .js-day-filter': 'setDayFilter'
+    'click .js-tag-filter-toggle': 'toggleTagFilter'
+    'click .js-clear-tag-filters': 'clearTagFilters'
     'click .js-week-shift': 'shiftWeek'
     'click .js-week-reset': 'resetWeek'
     'change .js-week-picker': 'pickWeek'
@@ -17,11 +19,13 @@ class App.DomServisDispatchBoard extends App.Controller
     'click .js-create-job': 'createJob'
     'input .js-create-draft-field': 'updateCreateDraft'
     'change .js-create-draft-field': 'updateCreateDraft'
+    'click .js-create-tag-toggle': 'toggleCreateTag'
     'click .js-trigger-create-attachment-upload': 'triggerCreateAttachmentUpload'
     'change .js-create-attachment-input': 'selectCreateAttachments'
     'click .js-remove-create-attachment': 'removeCreateAttachment'
     'change .js-create-attachment-kind': 'changeCreateAttachmentKind'
     'click .js-save-edit': 'saveEdit'
+    'click .js-edit-tag-toggle': 'toggleEditTag'
     'click .js-take-job': 'takeJob'
     'click .js-release-job': 'releaseJob'
     'click .js-set-status': 'setStatus'
@@ -39,6 +43,8 @@ class App.DomServisDispatchBoard extends App.Controller
     @selectedWeekStart = @startOfWeek(new Date())
     @effectivePolicy = null
     @policyRegistry = {}
+    @availableTags = []
+    @activeTagFilters = []
     @jobs = []
     @loading = true
     @errorMessage = null
@@ -61,6 +67,7 @@ class App.DomServisDispatchBoard extends App.Controller
 
     @render()
     @loadEffectivePolicy()
+    @loadTags()
     @loadOrganizations()
     @loadJobs()
 
@@ -98,6 +105,7 @@ class App.DomServisDispatchBoard extends App.Controller
       statusFilters: @buildScopedStatusFilters()
       weekControls: @buildWeekControls()
       dayFilters: @buildDayFilters()
+      tagFilters: @buildTagFilters()
       createOpen: @createOpen
       editOpen: @editOpen
       editSaving: @editSaving
@@ -115,6 +123,7 @@ class App.DomServisDispatchBoard extends App.Controller
       organizationOptions: @organizationOptions()
       privateOrganizationId: @privateOrganizationId()
       jobCards: @buildJobCards()
+      createTagOptions: @availableTagOptions(@createDraft.work_tags)
       defaultVisitDay: defaultVisitDay
       defaultVisitDate: @nextDateForDay(defaultVisitDay)
       todayLabel: @weekdayLabel(defaultVisitDay)
@@ -163,6 +172,19 @@ class App.DomServisDispatchBoard extends App.Controller
       error: =>
         @policyRegistry = {}
         @effectivePolicy = null
+        @render() if !@loading
+    )
+
+  loadTags: =>
+    @ajax(
+      id: 'dom_servis_dispatch_tags'
+      type: 'GET'
+      url: "#{@apiPath}/dom_servis/dispatch/tags"
+      success: (data) =>
+        @availableTags = data?.tags || []
+        @render() if !@loading
+      error: =>
+        @availableTags = []
         @render() if !@loading
     )
 
@@ -225,6 +247,7 @@ class App.DomServisDispatchBoard extends App.Controller
   refreshJobs: (e) =>
     @preventDefault(e)
     @loadEffectivePolicy()
+    @loadTags()
     @loadJobs()
 
   setStatusFilter: (e) =>
@@ -235,6 +258,23 @@ class App.DomServisDispatchBoard extends App.Controller
   setDayFilter: (e) =>
     @preventDefault(e)
     @dayFilter = $(e.currentTarget).data('filter')
+    @render()
+
+  toggleTagFilter: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    tagName = $(e.currentTarget).data('tag')?.toString()?.trim()
+    return if !tagName
+
+    if _.contains(@activeTagFilters, tagName)
+      @activeTagFilters = _.without(@activeTagFilters, tagName)
+    else
+      @activeTagFilters = @activeTagFilters.concat([tagName])
+
+    @render()
+
+  clearTagFilters: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    @activeTagFilters = []
     @render()
 
   shiftWeek: (e) =>
@@ -491,6 +531,21 @@ class App.DomServisDispatchBoard extends App.Controller
   updateCreateDraft: ->
     @syncCreateDraftFromForm()
 
+  toggleCreateTag: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    @syncCreateDraftFromForm()
+
+    button = $(e.currentTarget)
+    tagName = button.data('tag')?.toString()?.trim()
+    return if !tagName
+
+    tags = @parseTags(@createDraft.work_tags)
+    tags = if _.contains(tags, tagName) then _.without(tags, tagName) else tags.concat([tagName])
+
+    @createDraft.work_tags = tags.join(', ')
+    @$('.js-create-work-tags').val(@createDraft.work_tags)
+    @updateTagToggleGroup(button.closest('.dom-servis-dispatch-tag-selector'), tags)
+
   formatDateInput: (dateValue) ->
     return '' if !dateValue
 
@@ -741,6 +796,8 @@ class App.DomServisDispatchBoard extends App.Controller
     switch field.type
       when 'textarea'
         input.val()?.trim()
+      when 'tag_selector'
+        input.val()?.trim()
       when 'user_select', 'organization_select'
         input.val()
       when 'select'
@@ -762,11 +819,28 @@ class App.DomServisDispatchBoard extends App.Controller
       else
         value
 
+  toggleEditTag: (e) =>
+    @preventDefaultAndStopPropagation(e)
+
+    button = $(e.currentTarget)
+    container = button.closest('.dom-servis-dispatch-tag-selector')
+    hiddenInput = container.find(".js-edit-field[data-field='work_tags']")
+    return if hiddenInput.length < 1
+
+    tagName = button.data('tag')?.toString()?.trim()
+    return if !tagName
+
+    tags = @parseTags(hiddenInput.val())
+    tags = if _.contains(tags, tagName) then _.without(tags, tagName) else tags.concat([tagName])
+
+    hiddenInput.val(tags.join(', '))
+    @updateTagToggleGroup(container, tags)
+
   fieldValueChanged: (job, fieldKey, nextValue) ->
     currentValue = @jobFieldValue(job, fieldKey)
 
     if fieldKey is 'work_tags'
-      return !_.isEqual(@normalizeTags(currentValue), @normalizeTags(nextValue))
+      return !_.isEqual(@normalizeTags(currentValue).sort(), @normalizeTags(nextValue).sort())
 
     if fieldKey in ['assignee_id', 'organization_id']
       currentId = if currentValue? then parseInt(currentValue, 10) else null
@@ -824,6 +898,32 @@ class App.DomServisDispatchBoard extends App.Controller
       item.active = item.id is @dayFilter
       item
 
+  buildTagFilters: ->
+    tagsByName = {}
+    baseJobs = @jobsForDayAndStatusFilters()
+
+    _.each baseJobs, (job) =>
+      _.each @normalizeTags(job.work_tags), (tagName) ->
+        tagsByName[tagName] ?= 0
+        tagsByName[tagName] += 1
+
+    _.each @activeTagFilters, (tagName) ->
+      tagsByName[tagName] ?= 0
+
+    _.chain(tagsByName)
+      .map((count, tagName) =>
+        {
+          id: tagName
+          label: tagName
+          count: count
+          active: _.contains(@activeTagFilters, tagName)
+        }
+      )
+      .sortBy((item) -> item.label.toLowerCase())
+      .sortBy((item) -> -item.count)
+      .sortBy((item) -> if item.active then 0 else 1)
+      .value()
+
   buildJobCards: ->
     currentUserId = App.User.current()?.id
     dispatcherAccess = @dispatcherAccess()
@@ -853,7 +953,7 @@ class App.DomServisDispatchBoard extends App.Controller
         statusLabel: @statusLabel(job.status)
         assigneeName: assigneeName
         summaryText: @jobSummaryText(job)
-        visibleTags: @normalizeTags(job.work_tags).slice(0, 2)
+        visibleTags: @tagBadgeItems(job.work_tags, 2)
         moreTagsCount: Math.max(@normalizeTags(job.work_tags).length - 2, 0)
         canTake: job.status is 'pool' && @actionAllowed('take_job')
         canRelease: job.assignee_id? && canOperate && @actionAllowed('release_to_pool')
@@ -898,7 +998,7 @@ class App.DomServisDispatchBoard extends App.Controller
       priority: job.priority || 'medium'
       priorityLabel: @priorityLabel(job.priority)
       assigneeName: @resolveAssigneeName(job)
-      visibleTags: tags.slice(0, 4)
+      visibleTags: @tagBadgeItems(tags, 4)
       hiddenTagsCount: Math.max(tags.length - 4, 0)
       description: job.description || ''
       comment: job.comment || ''
@@ -1045,7 +1145,7 @@ class App.DomServisDispatchBoard extends App.Controller
       wide: definition?.wide == true
       value: @fieldInputValue(job, fieldKey)
       displayValue: @fieldDisplayValue(job, fieldKey, unsupported)
-      options: @fieldOptions(fieldKey)
+      options: if fieldKey is 'work_tags' then @availableTagOptions(@fieldInputValue(job, fieldKey)) else @fieldOptions(fieldKey)
       hint: @fieldHint(fieldKey, unsupported)
     }
 
@@ -1121,7 +1221,7 @@ class App.DomServisDispatchBoard extends App.Controller
         group: 'job_content'
         wide: true
       work_tags:
-        type: 'text'
+        type: 'tag_selector'
         group: 'job_content'
         wide: true
       assignee_id:
@@ -1211,7 +1311,7 @@ class App.DomServisDispatchBoard extends App.Controller
     return 'Поле уже есть в матрице доступа, но его хранение или отдельный editor будут подключены следующим шагом.' if unsupported
     return 'Список исполнителей строится по активным пользователям Дом-Сервис.' if fieldKey is 'assignee_id'
     return 'Используется как заказчик / источник заказа: управляющая компания, партнёр или Частный заказ.' if fieldKey is 'organization_id'
-    return 'Теги перечисляются через запятую.' if fieldKey is 'work_tags'
+    return 'Диспетчер выбирает только существующие теги из общего словаря Zammad. Новые имена создаются через Manage > Tags.' if fieldKey is 'work_tags'
     null
 
   fieldInputValue: (job, fieldKey) ->
@@ -1498,12 +1598,23 @@ class App.DomServisDispatchBoard extends App.Controller
     _.find @jobs, (job) -> "#{job.id}" is "#{id}"
 
   filteredJobs: ->
+    list = @jobsForDayAndStatusFilters()
+
+    if @activeTagFilters.length > 0
+      list = _.filter(list, (job) =>
+        jobTags = @normalizeTags(job.work_tags)
+        _.some(@activeTagFilters, (tagName) -> _.contains(jobTags, tagName))
+      )
+
+    @sortJobs(list)
+
+  jobsForDayAndStatusFilters: ->
     list = @jobsForStatusFilter()
 
     if @dayFilter isnt 'all'
       list = _.filter(list, (job) => @jobVisitDay(job) is @dayFilter)
 
-    @sortJobs(list)
+    list
 
   jobsForSelectedWeek: ->
     startDate = @selectedWeekStartDate()
@@ -1807,6 +1918,38 @@ class App.DomServisDispatchBoard extends App.Controller
       return @parseTags(value)
 
     []
+
+  availableTagOptions: (selectedValue = []) ->
+    selectedTags = @normalizeTags(selectedValue)
+    availableNames = _.map(@availableTags, (tag) -> tag.name)
+
+    _.chain(selectedTags.concat(availableNames))
+      .uniq()
+      .map((tagName) =>
+        tagEntry = _.find(@availableTags, (item) -> item.name is tagName)
+        {
+          id: tagName
+          label: tagName
+          count: tagEntry?.dispatch_count || 0
+          selected: _.contains(selectedTags, tagName)
+        }
+      )
+      .sortBy((item) -> item.label.toLowerCase())
+      .sortBy((item) -> if item.selected then 0 else 1)
+      .value()
+
+  tagBadgeItems: (tagValue, limit = 4) ->
+    _.map @normalizeTags(tagValue).slice(0, limit), (tagName) =>
+      {
+        name: tagName
+        active: _.contains(@activeTagFilters, tagName)
+      }
+
+  updateTagToggleGroup: (container, selectedTags) ->
+    container.find('.js-tag-toggle-chip').each (index, element) ->
+      chip = $(element)
+      tagName = chip.data('tag')?.toString()?.trim()
+      chip.toggleClass('is-active', _.contains(selectedTags, tagName))
 
   fallbackJobCode: (job) ->
     createdAt = new Date(job.created_at || Date.now())

@@ -10,14 +10,21 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
   end
 
   def create
+    ensure_dispatch_tags_exist!(job_create_params[:work_tags])
+
     job = DomServis::DispatchJob.new(job_create_params)
     authorize job, :create?
     ensure_action_allowed!('create_job')
     ensure_action_allowed!('publish_to_pool') if job.status == 'pool'
-    job.save!
+    ActiveRecord::Base.transaction do
+      job.created_by = current_user
+      job.updated_by = current_user
+      job.save!
 
-    create_event!(job, 'created', source: job.source)
-    create_event!(job, 'published') if job.status == 'pool'
+      create_event!(job, 'created', source: job.source)
+      create_event!(job, 'published') if job.status == 'pool'
+      sync_backing_ticket!(job, strict: true, ensure_created: true)
+    end
 
     model_item_render(job, status: :created)
   end
@@ -28,15 +35,17 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     ensure_action_allowed!('edit_all_fields')
     ensure_fields_editable!(job_update_params.keys)
     ensure_update_actions_allowed!(job, job_update_params)
+    ensure_dispatch_tags_exist!(job_update_params[:work_tags]) if job_update_params.key?(:work_tags)
 
     tracked_changes = collect_tracked_changes(job, job_update_params)
-    job.update!(job_update_params)
+    job.update!(job_update_params.merge(updated_by_id: current_user.id))
 
     tracked_changes.each do |event_type, meta|
       create_event!(job, event_type, meta)
     end
 
     create_event!(job, 'updated') if tracked_changes.blank?
+    sync_backing_ticket!(job, changes: tracked_changes)
 
     model_item_render(job)
   end
@@ -67,6 +76,7 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
         assignee_id: current_user.id,
         status:      job.status == 'pool' ? 'taken' : job.status,
         taken_at:    job.taken_at || Time.zone.now,
+        updated_by_id: current_user.id,
       )
       create_event!(job, 'taken')
     end
@@ -75,6 +85,8 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
       render json: conflict.attributes_with_association_ids, status: :conflict
       return
     end
+
+    sync_backing_ticket!(job, changes: { 'taken' => { to: current_user.id } })
 
     model_item_render(job)
   end
@@ -89,9 +101,12 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
         assignee_id: nil,
         status:      'pool',
         taken_at:    nil,
+        updated_by_id: current_user.id,
       )
       create_event!(job, 'released')
     end
+
+    sync_backing_ticket!(job, changes: { 'released' => {} })
 
     model_item_render(job)
   end
@@ -109,9 +124,12 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     ensure_action_allowed!('reopen_job') if %w[pool taken].include?(status) && job.status.in?(%w[done cancelled])
 
     job.with_lock do
-      job.update!(status: status)
-      create_event!(job, 'status_changed', to: status)
+      previous_status = job.status
+      job.update!(status: status, updated_by_id: current_user.id)
+      create_event!(job, 'status_changed', from: previous_status, to: status)
     end
+
+    sync_backing_ticket!(job, changes: { 'status_changed' => { from: job.status_before_last_save, to: status } })
 
     model_item_render(job)
   end
@@ -131,9 +149,11 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     }
 
     job.with_lock do
-      job.update!(updates)
+      job.update!(updates.merge(updated_by_id: current_user.id))
       create_event!(job, 'moved_weekday', from: job.visit_day_before_last_save, to: job.visit_day)
     end
+
+    sync_backing_ticket!(job, changes: { 'moved_weekday' => { from: job.visit_day_before_last_save, to: job.visit_day } })
 
     model_item_render(job)
   end
@@ -148,9 +168,11 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     raise Exceptions::UnprocessableEntity, 'Invalid dispatch job priority.' if !DomServis::DispatchJob::PRIORITIES.include?(priority)
 
     job.with_lock do
-      job.update!(priority:)
+      job.update!(priority:, updated_by_id: current_user.id)
       create_event!(job, 'priority_changed', from: job.priority_before_last_save, to: job.priority)
     end
+
+    sync_backing_ticket!(job, changes: { 'priority_changed' => { from: job.priority_before_last_save, to: job.priority } })
 
     model_item_render(job)
   end
@@ -190,7 +212,6 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     params.permit(
       :assignee_id,
       :organization_id,
-      :ticket_id,
       :status,
       :priority,
       :visit_day,
@@ -229,12 +250,20 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
         changes['comment_added'] = { comment: updates[:comment] }
       end
 
+      if updates.key?(:description) && updates[:description].to_s != job.description.to_s
+        changes['description_updated'] = { description: updates[:description] }
+      end
+
       if updates.key?(:organization_id) && normalized_assignee_id(updates[:organization_id]) != normalized_assignee_id(job.organization_id)
         changes['organization_changed'] = { from: job.organization_id, to: updates[:organization_id] }
       end
 
-      if updates[:work_tags].present? && updates[:work_tags] != job.work_tags
+      if updates.key?(:work_tags) && normalized_tag_names(updates[:work_tags]) != normalized_tag_names(job.work_tags)
         changes['tags_changed'] = { to: updates[:work_tags] }
+      end
+
+      if updates.key?(:assignee_id) && normalized_assignee_id(updates[:assignee_id]) != normalized_assignee_id(job.assignee_id)
+        changes['assignee_changed'] = { from: job.assignee_id, to: updates[:assignee_id] }
       end
     end
   end
@@ -246,6 +275,17 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
       event_type:,
       meta:         meta,
     )
+  end
+
+  def ensure_dispatch_tags_exist!(tag_names)
+    missing_tags = DomServis::DispatchTagCatalog.missing_names(tag_names)
+    return if missing_tags.blank?
+
+    raise Exceptions::UnprocessableEntity, "Dispatch tags must be created by a Dom-Servis or Zammad admin first: #{missing_tags.join(', ')}."
+  end
+
+  def normalized_tag_names(tag_names)
+    DomServis::DispatchTagCatalog.normalize_names(tag_names).sort
   end
 
   def infer_priority(input)
@@ -359,5 +399,21 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
 
   def week_start_for(date)
     date.beginning_of_week(:monday)
+  end
+
+  def sync_backing_ticket!(job, changes: {}, strict: false, ensure_created: false)
+    service_class =
+      if ensure_created
+        DomServis::Dispatch::BackingTicket::Create
+      else
+        DomServis::Dispatch::BackingTicket::SyncFromDispatch
+      end
+
+    service_class
+      .new(dispatch_job: job, operator: current_user, changes: changes)
+      .execute
+  rescue => e
+    Rails.logger.error("[dom_servis.backing_ticket] sync failed for job=#{job.id}: #{e.class}: #{e.message}")
+    raise if strict
   end
 end

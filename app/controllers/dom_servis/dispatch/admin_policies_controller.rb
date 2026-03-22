@@ -24,6 +24,7 @@ class DomServis::Dispatch::AdminPoliciesController < DomServis::Dispatch::BaseCo
   def payload
     {
       stats:    dispatch_stats,
+      tags:     DomServis::DispatchTagCatalog.entries,
       registry: DomServis::DispatchPolicy.registry,
       policy:   DomServis::DispatchPolicy.current,
     }

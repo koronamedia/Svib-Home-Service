@@ -52,6 +52,33 @@
     <section class="dom-servis-dispatch-admin__section">
       <div class="dom-servis-dispatch-admin__section-head">
         <div>
+          <h2><%- @T('Dispatch Tags') %></h2>
+          <p><%- @T('Dispatch job tags reuse the global Zammad tag namespace. Create new tag names only in Manage > Tags, then dispatchers can assign them on jobs and the same tags will be mirrored into backing tickets.') %></p>
+        </div>
+      </div>
+
+      <% if @tags.length > 0: %>
+        <div class="dom-servis-dispatch-admin__tag-list">
+          <% for tag in @tags: %>
+            <div class="dom-servis-dispatch-admin__tag-card">
+              <strong><%= tag.name %></strong>
+              <span><%- @T('Dispatch jobs') %>: <%= tag.dispatch_count %></span>
+              <span><%- @T('All Zammad references') %>: <%= tag.ticket_count %></span>
+            </div>
+          <% end %>
+        </div>
+      <% else: %>
+        <div class="dom-servis-dispatch-admin__tag-empty"><%- @T('No dispatch tags created yet.') %></div>
+      <% end %>
+
+      <div class="dom-servis-dispatch-admin__note">
+        <p><%- @T('Dispatch Admin is read-only for the tag dictionary. Use Manage > Tags to create or rename tags, and use the dispatch board to assign them on jobs.') %></p>
+      </div>
+    </section>
+
+    <section class="dom-servis-dispatch-admin__section">
+      <div class="dom-servis-dispatch-admin__section-head">
+        <div>
           <h2><%- @T('Role Profiles') %></h2>
           <p><%- @T('Stable role stack. Membership is assigned in Zammad roles; behavior is configured by the matrices below.') %></p>
         </div>

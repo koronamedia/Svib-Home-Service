@@ -8,6 +8,7 @@ Zammad::Application.routes.draw do
         resource :admin_policy, only: %i[show update], controller: :admin_policies do
           post :reset
         end
+        resources :tags, only: %i[index], controller: :tags
 
         resources :jobs, only: %i[index show create update destroy] do
           collection do
