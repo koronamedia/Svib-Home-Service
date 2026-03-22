@@ -189,6 +189,7 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
   def permitted_job_params
     params.permit(
       :assignee_id,
+      :organization_id,
       :ticket_id,
       :status,
       :priority,
@@ -226,6 +227,10 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
 
       if updates[:comment].present? && updates[:comment] != job.comment
         changes['comment_added'] = { comment: updates[:comment] }
+      end
+
+      if updates.key?(:organization_id) && normalized_assignee_id(updates[:organization_id]) != normalized_assignee_id(job.organization_id)
+        changes['organization_changed'] = { from: job.organization_id, to: updates[:organization_id] }
       end
 
       if updates[:work_tags].present? && updates[:work_tags] != job.work_tags

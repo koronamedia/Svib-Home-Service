@@ -23,6 +23,7 @@ Zammad::Application.routes.draw do
           end
 
           resources :events, only: %i[index]
+          resources :attachments, only: %i[index show create destroy], controller: :attachments
         end
       end
     end

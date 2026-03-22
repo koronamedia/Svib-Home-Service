@@ -13,6 +13,9 @@ class DomServis::DispatchEvent < ApplicationModel
     priority_changed
     tags_changed
     comment_added
+    organization_changed
+    attachment_added
+    attachment_removed
     ai_parsed
     updated
   ].freeze

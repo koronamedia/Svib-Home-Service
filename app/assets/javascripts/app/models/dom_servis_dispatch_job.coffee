@@ -1,5 +1,5 @@
 class App.DomServisDispatchJob extends App.Model
-  @configure 'DomServisDispatchJob', 'job_code', 'service_type', 'address', 'client_name', 'client_phone', 'visit_day', 'visit_date', 'visit_time', 'priority', 'status', 'source', 'assignee_id', 'description', 'comment', 'work_tags', 'published_at', 'taken_at', 'created_by_id', 'created_at', 'updated_by_id', 'updated_at'
+  @configure 'DomServisDispatchJob', 'job_code', 'service_type', 'address', 'client_name', 'client_phone', 'visit_day', 'visit_date', 'visit_time', 'priority', 'status', 'source', 'assignee_id', 'organization_id', 'description', 'comment', 'work_tags', 'published_at', 'taken_at', 'created_by_id', 'created_at', 'updated_by_id', 'updated_at'
   @extend Spine.Model.Ajax
   @url: @apiPath + '/dom_servis/dispatch/jobs'
   @configure_attributes = [
@@ -14,6 +14,7 @@ class App.DomServisDispatchJob extends App.Model
     { name: 'status', display: __('Status'), tag: 'select', null: false, translate: false, options: { pool: 'pool', taken: 'taken', in_progress: 'in_progress', done: 'done', cancelled: 'cancelled' }, default: 'pool' }
     { name: 'source', display: __('Source'), tag: 'select', null: false, translate: false, options: { manual: 'manual', ai: 'ai' }, default: 'manual' }
     { name: 'assignee_id', display: __('Assignee'), tag: 'select', multiple: false, null: true, relation: 'User' }
+    { name: 'organization_id', display: __('Organization'), tag: 'select', multiple: false, null: true, relation: 'Organization' }
     { name: 'description', display: __('Description'), tag: 'textarea', rows: 5, limit: 5000, null: true }
     { name: 'comment', display: __('Comment'), tag: 'textarea', rows: 3, limit: 2000, null: true }
     { name: 'work_tags', display: __('Work tags'), tag: 'input', type: 'text', limit: 500, null: true }
@@ -33,6 +34,7 @@ class App.DomServisDispatchJob extends App.Model
     'status'
     'priority'
     'assignee_id'
+    'organization_id'
     'visit_date'
     'visit_time'
   ]

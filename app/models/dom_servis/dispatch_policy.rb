@@ -111,7 +111,7 @@ class DomServis::DispatchPolicy
     'taken_at'     => { label: 'Taken at',      group: 'lifecycle',    source: 'db' },
     'completed_at' => { label: 'Completed at',  group: 'lifecycle',    source: 'db' },
     'cancelled_at' => { label: 'Cancelled at',  group: 'lifecycle',    source: 'db' },
-    'organization' => { label: 'Organization',  group: 'customer',     source: 'virtual' },
+    'organization_id' => { label: 'Customer account', group: 'customer', source: 'db' },
     'attachments'  => { label: 'Attachments',   group: 'attachments',  source: 'virtual' },
   }.freeze
 
@@ -388,7 +388,7 @@ class DomServis::DispatchPolicy
 
     def field_editable_default(field_key, role_key)
       return false if READ_ONLY_FIELDS.include?(field_key)
-      return false if %w[status assignee_id ticket_id organization attachments].include?(field_key) && role_key == 'master'
+      return false if %w[status assignee_id ticket_id organization_id attachments].include?(field_key) && role_key == 'master'
       return false if role_key == 'master'
 
       true

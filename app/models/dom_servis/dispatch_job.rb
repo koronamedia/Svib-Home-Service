@@ -1,12 +1,15 @@
 # Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
 
 class DomServis::DispatchJob < ApplicationModel
+  include ApplicationModel::HasAttachments
+
   self.table_name = 'dom_servis_dispatch_jobs'
 
   STATUSES   = %w[pool taken in_progress done cancelled].freeze
   PRIORITIES = %w[low medium high critical].freeze
   SOURCES    = %w[manual ai].freeze
   VISIT_DAYS = %w[mon tue wed thu fri sat sun].freeze
+  ATTACHMENT_KINDS = %w[intake_attachment route_info completion_act diagnostic_photo other].freeze
 
   VISIT_DAY_LABELS = {
     'mon' => 'Пн',
@@ -22,6 +25,7 @@ class DomServis::DispatchJob < ApplicationModel
   belongs_to :updated_by, class_name: 'User', optional: true
   belongs_to :assignee, class_name: 'User', optional: true
   belongs_to :ticket, optional: true
+  belongs_to :organization, optional: true
 
   has_many :events,
            class_name: 'DomServis::DispatchEvent',
@@ -35,6 +39,8 @@ class DomServis::DispatchJob < ApplicationModel
   validates :visit_day, inclusion: { in: VISIT_DAYS }
   validates :service_type, presence: true
   validates :address, presence: true
+
+  attachments_cleanup!
 
   before_validation :apply_defaults
   before_validation :assign_job_code
@@ -71,6 +77,7 @@ class DomServis::DispatchJob < ApplicationModel
     self.priority = 'medium' if priority.blank?
     self.source = 'manual' if source.blank?
     self.visit_day = infer_visit_day if visit_day.blank?
+    self.organization_id ||= self.class.private_organization_id
     self.published_at ||= Time.zone.now if status == 'pool'
   end
 
@@ -143,5 +150,30 @@ class DomServis::DispatchJob < ApplicationModel
     end
   rescue ArgumentError
     'mon'
+  end
+
+  class << self
+    def private_organization
+      Organization.find_by(name: 'Частный заказ') || create_private_organization
+    end
+
+    def private_organization_id
+      private_organization&.id
+    end
+
+    private
+
+    def create_private_organization
+      system_user = User.order(:id).first
+      return nil if !system_user
+
+      Organization.create_with(
+        active:        true,
+        shared:        false,
+        note:          'System organization for direct Dom-Servis retail jobs.',
+        created_by_id: system_user.id,
+        updated_by_id: system_user.id,
+      ).find_or_create_by!(name: 'Частный заказ')
+    end
   end
 end

@@ -7,16 +7,27 @@ class App.DomServisDispatchBoard extends App.Controller
     'click .js-week-shift': 'shiftWeek'
     'click .js-week-reset': 'resetWeek'
     'change .js-week-picker': 'pickWeek'
+    'click .js-job-card': 'openDetailFromCard'
+    'click .js-close-detail': 'closeDetail'
     'click .js-open-create': 'openCreate'
     'click .js-close-create': 'closeCreate'
     'click .js-open-edit': 'openEdit'
     'click .js-close-edit': 'closeEdit'
     'click .js-refresh-jobs': 'refreshJobs'
     'click .js-create-job': 'createJob'
+    'input .js-create-draft-field': 'updateCreateDraft'
+    'change .js-create-draft-field': 'updateCreateDraft'
+    'click .js-trigger-create-attachment-upload': 'triggerCreateAttachmentUpload'
+    'change .js-create-attachment-input': 'selectCreateAttachments'
+    'click .js-remove-create-attachment': 'removeCreateAttachment'
+    'change .js-create-attachment-kind': 'changeCreateAttachmentKind'
     'click .js-save-edit': 'saveEdit'
     'click .js-take-job': 'takeJob'
     'click .js-release-job': 'releaseJob'
     'click .js-set-status': 'setStatus'
+    'click .js-trigger-attachment-upload': 'triggerAttachmentUpload'
+    'change .js-upload-attachment-input': 'uploadAttachments'
+    'click .js-remove-attachment': 'removeAttachment'
     'change .js-change-priority': 'changePriority'
     'change .js-change-visit-day': 'changeVisitDay'
 
@@ -35,9 +46,22 @@ class App.DomServisDispatchBoard extends App.Controller
     @editOpen = false
     @editingJobId = null
     @editSaving = false
+    @detailOpen = false
+    @detailJobId = null
+    @organizations = []
+    @organizationsLoaded = false
+    @attachmentCollections = {}
+    @attachmentLoading = {}
+    @attachmentUploading = {}
+    @createDraft = {}
+    @createAttachmentFiles = []
+    @createAttachmentUploading = false
+    @createAttachmentKind = 'intake_attachment'
+    @resetCreateDraft()
 
     @render()
     @loadEffectivePolicy()
+    @loadOrganizations()
     @loadJobs()
 
   active: (state) =>
@@ -54,7 +78,8 @@ class App.DomServisDispatchBoard extends App.Controller
 
   render: ->
     defaultVisitDay = @defaultVisitDay()
-    editJob = @currentEditJob()
+    detailJob = @currentDetailJob()
+    detailEditing = @detailEditing()
 
     @html App.view('dom_servis_dispatch/board')(
       loading: @loading
@@ -62,7 +87,13 @@ class App.DomServisDispatchBoard extends App.Controller
       dispatcherAccess: @dispatcherAccess()
       masterAccess: @masterAccess()
       roleLabel: @roleLabel()
+      currentUserCard: @buildCurrentUserCard()
       canCreateJob: @canCreatePublishedJob()
+      createDraft: @createDraft
+      createAttachmentKinds: @createAttachmentKindOptions()
+      createAttachmentKind: @createAttachmentKind
+      createAttachmentFiles: @buildCreateAttachmentDraft()
+      createAttachmentUploading: @createAttachmentUploading
       stats: @buildStats()
       statusFilters: @buildScopedStatusFilters()
       weekControls: @buildWeekControls()
@@ -70,8 +101,19 @@ class App.DomServisDispatchBoard extends App.Controller
       createOpen: @createOpen
       editOpen: @editOpen
       editSaving: @editSaving
-      editJob: @buildEditJobView(editJob)
-      editGroups: @buildEditGroups(editJob)
+      detailOpen: @detailOpen
+      detailEditing: detailEditing
+      detailJob: @buildDetailJobView(detailJob)
+      detailGroups: @buildDetailGroups(detailJob)
+      detailEditGroups: @buildDrawerEditGroups(detailJob)
+      detailAttachments: @buildAttachmentList(detailJob)
+      detailAttachmentKinds: @attachmentKindOptions(detailJob)
+      detailCanAddAttachment: @canAddAttachment(detailJob)
+      detailCanDeleteAttachments: @canDeleteAttachments()
+      detailAttachmentLoading: @attachmentLoading["#{detailJob?.id}"] is true
+      detailAttachmentUploading: @attachmentUploading["#{detailJob?.id}"] is true
+      organizationOptions: @organizationOptions()
+      privateOrganizationId: @privateOrganizationId()
       jobCards: @buildJobCards()
       defaultVisitDay: defaultVisitDay
       defaultVisitDate: @nextDateForDay(defaultVisitDay)
@@ -124,6 +166,62 @@ class App.DomServisDispatchBoard extends App.Controller
         @render() if !@loading
     )
 
+  loadOrganizations: =>
+    @ajax(
+      id: 'dom_servis_dispatch_organizations'
+      type: 'GET'
+      url: "#{@apiPath}/organizations"
+      data:
+        per_page: 200
+        sort_by: 'name'
+        order_by: 'ASC'
+      processData: true
+      success: (data) =>
+        organizations = data
+        if data?.assets?.Organization
+          organizations = data.assets.Organization
+
+        organizations ||= []
+        if _.isObject(organizations) && !_.isArray(organizations)
+          organizations = _.values(organizations)
+
+        @organizations = _.sortBy(_.map(organizations, (organization) ->
+          id: organization.id
+          name: organization.name
+        ), (organization) -> "#{organization.name || ''}".toLowerCase())
+        @organizationsLoaded = true
+        @render() if !@loading
+      error: =>
+        @organizations = []
+        @organizationsLoaded = true
+        @render() if !@loading
+    )
+
+  loadAttachments: (jobId, force = false) =>
+    return if !jobId
+
+    key = "#{jobId}"
+    if !force && @attachmentCollections[key]?
+      return
+
+    @attachmentLoading[key] = true
+    @render() if @detailOpen && "#{@detailJobId}" is key
+
+    @ajax(
+      id: "dom_servis_dispatch_attachments_#{jobId}"
+      type: 'GET'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs/#{jobId}/attachments"
+      success: (data) =>
+        @attachmentCollections[key] = data || []
+        @attachmentLoading[key] = false
+        @render()
+      error: =>
+        @attachmentCollections[key] = []
+        @attachmentLoading[key] = false
+        @notify(type: 'error', msg: 'Не удалось загрузить вложения заявки.', timeout: 4000)
+        @render()
+    )
+
   refreshJobs: (e) =>
     @preventDefault(e)
     @loadEffectivePolicy()
@@ -163,14 +261,44 @@ class App.DomServisDispatchBoard extends App.Controller
   openCreate: (e) =>
     @preventDefaultAndStopPropagation(e)
     return if !@canCreatePublishedJob()
+    @resetCreateDraft()
+    @resetCreateAttachmentDraft()
     @editOpen = false
     @editingJobId = null
+    @detailOpen = false
+    @detailJobId = null
     @createOpen = true
     @render()
 
   closeCreate: (e) =>
     @preventDefaultAndStopPropagation(e)
     @createOpen = false
+    @resetCreateDraft()
+    @resetCreateAttachmentDraft()
+    @render()
+
+  openDetailFromCard: (e) =>
+    return if $(e.target).closest('.js-no-detail').length > 0
+
+    id = $(e.currentTarget).data('id')
+    job = @findJob(id)
+    return if !job
+
+    @createOpen = false
+    @editOpen = false
+    @editingJobId = null
+    @detailOpen = true
+    @detailJobId = job.id
+    @loadAttachments(job.id)
+    @render()
+
+  closeDetail: (e) =>
+    @preventDefaultAndStopPropagation(e) if e
+    @detailOpen = false
+    @detailJobId = null
+    @editOpen = false
+    @editingJobId = null
+    @editSaving = false
     @render()
 
   openEdit: (e) =>
@@ -181,9 +309,12 @@ class App.DomServisDispatchBoard extends App.Controller
     return if !@canOpenEdit(job)
 
     @createOpen = false
+    @detailOpen = true
+    @detailJobId = job.id
     @editingJobId = job.id
     @editOpen = true
     @editSaving = false
+    @loadAttachments(job.id)
     @render()
 
   closeEdit: (e) =>
@@ -202,11 +333,31 @@ class App.DomServisDispatchBoard extends App.Controller
 
     @formDisable(@$('.js-create-job'), 'button')
 
+    @ajax(
+      id: 'dom_servis_dispatch_create_job'
+      type: 'POST'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs"
+      data: JSON.stringify(payload)
+      processData: true
+      success: (data) =>
+        @finishCreatedJob(data, payload)
+      error: (xhr) =>
+        @formEnable(@$('.js-create-job'), 'button')
+        @notify(
+          type: 'error'
+          msg: @extractError(xhr, 'Р—Р°СЏРІРєСѓ РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ.')
+          timeout: 6000
+        )
+    )
+    return
+
     job = new App.DomServisDispatchJob(payload)
     ui = @
 
     job.save(
       done: ->
+        ui.finishCreatedJob(job, payload)
+        return
         ui.notify(
           type: 'success'
           msg: 'Заявка создана и опубликована в пул.'
@@ -224,6 +375,165 @@ class App.DomServisDispatchBoard extends App.Controller
           timeout: 6000
         )
     )
+
+  finishCreatedJob: (job, payload) =>
+    persistedJobId = @resolvePersistedJobId(job, payload)
+
+    finalizeSuccess = =>
+      @notify(
+        type: 'success'
+        msg: 'Р—Р°СЏРІРєР° СЃРѕР·РґР°РЅР° Рё РѕРїСѓР±Р»РёРєРѕРІР°РЅР° РІ РїСѓР».'
+        timeout: 3000
+      )
+      @createOpen = false
+      @resetCreateDraft()
+      @resetCreateAttachmentDraft()
+      @dayFilter = payload.visit_day || 'all'
+      @selectedWeekStart = @startOfWeek(@parseDateValue(payload.visit_date) || new Date())
+      @loadJobs()
+
+    finalizePartialFailure = =>
+      @notify(
+        type: 'error'
+        msg: 'Р—Р°СЏРІРєР° СЃРѕР·РґР°РЅР°, РЅРѕ РІР»РѕР¶РµРЅРёСЏ РЅРµ Р·Р°РіСЂСѓР·РёР»РёСЃСЊ. РС… РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РїРѕС‚РѕРј РІ РєР°СЂС‚РѕС‡РєРµ Р·Р°СЏРІРєРё.'
+        timeout: 7000
+      )
+      @createOpen = false
+      @resetCreateDraft()
+      @resetCreateAttachmentDraft()
+      @dayFilter = payload.visit_day || 'all'
+      @selectedWeekStart = @startOfWeek(@parseDateValue(payload.visit_date) || new Date())
+      @loadJobs()
+
+    if @createAttachmentFiles.length < 1
+      finalizeSuccess()
+      return
+
+    @createAttachmentUploading = true
+    @render()
+
+    if !persistedJobId
+      finalizePartialFailure()
+      return
+
+    @uploadAttachmentBatch(persistedJobId, @createAttachmentFiles, @createAttachmentKind)
+      .done =>
+        @createAttachmentUploading = false
+        finalizeSuccess()
+      .fail =>
+        @createAttachmentUploading = false
+        finalizePartialFailure()
+
+  triggerCreateAttachmentUpload: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    @$('.js-create-attachment-input').trigger('click')
+
+  selectCreateAttachments: (e) =>
+    @syncCreateDraftFromForm()
+    input = $(e.currentTarget)
+    files = _.toArray(input.prop('files') || [])
+    return if files.length < 1
+
+    @createAttachmentFiles = @createAttachmentFiles.concat(files)
+    input.val('')
+    @render()
+
+  removeCreateAttachment: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    @syncCreateDraftFromForm()
+    index = parseInt($(e.currentTarget).data('index'), 10)
+    return if _.isNaN(index) || !@createAttachmentFiles[index]?
+
+    @createAttachmentFiles.splice(index, 1)
+    @render()
+
+  changeCreateAttachmentKind: (e) =>
+    @createAttachmentKind = $(e.currentTarget).val() || 'intake_attachment'
+
+  resetCreateDraft: ->
+    defaultVisitDay = @defaultVisitDay()
+    privateOrganizationId = @privateOrganizationId()
+
+    @createDraft =
+      service_type: ''
+      address: ''
+      client_name: ''
+      client_phone: ''
+      visit_day: defaultVisitDay
+      visit_date: @formatDateInput(@nextDateForDay(defaultVisitDay))
+      visit_time: ''
+      priority: 'medium'
+      organization_id: if privateOrganizationId? then "#{privateOrganizationId}" else ''
+      work_tags: ''
+      description: ''
+      comment: ''
+
+  syncCreateDraftFromForm: ->
+    return if !@createOpen
+
+    read = (selector) =>
+      @$(selector).val()?.toString() || ''
+
+    @createDraft =
+      service_type: read('.js-create-service-type').trim()
+      address: read('.js-create-address').trim()
+      client_name: read('.js-create-client-name').trim()
+      client_phone: read('.js-create-client-phone').trim()
+      visit_day: read('.js-create-visit-day').trim() || @createDraft.visit_day || @defaultVisitDay()
+      visit_date: read('.js-create-visit-date').trim() || @createDraft.visit_date || @formatDateInput(@nextDateForDay(@defaultVisitDay()))
+      visit_time: read('.js-create-visit-time').trim()
+      priority: read('.js-create-priority').trim() || 'medium'
+      organization_id: read('.js-create-organization-id').trim() || @createDraft.organization_id || "#{@privateOrganizationId() || ''}"
+      work_tags: read('.js-create-work-tags').trim()
+      description: read('.js-create-description').trim()
+      comment: read('.js-create-comment').trim()
+
+  updateCreateDraft: ->
+    @syncCreateDraftFromForm()
+
+  formatDateInput: (dateValue) ->
+    return '' if !dateValue
+
+    date = @parseDateValue(dateValue) || dateValue
+    return '' if !date || !date.getFullYear
+
+    year = "#{date.getFullYear()}"
+    month = "#{date.getMonth() + 1}".padStart(2, '0')
+    day = "#{date.getDate()}".padStart(2, '0')
+    "#{year}-#{month}-#{day}"
+
+  resetCreateAttachmentDraft: ->
+    @createAttachmentFiles = []
+    @createAttachmentUploading = false
+    @createAttachmentKind = 'intake_attachment'
+
+  buildCreateAttachmentDraft: ->
+    _.map @createAttachmentFiles, (file, index) ->
+      index: index
+      name: file.name
+      size: file.size
+
+  resolvePersistedJobId: (job, payload) ->
+    directId = parseInt(job?.id, 10)
+    return directId if !_.isNaN(directId) && directId > 0
+
+    persistedByCode = null
+    if job?.job_code
+      persistedByCode = App.DomServisDispatchJob.findByAttribute('job_code', job.job_code)
+      persistedId = parseInt(persistedByCode?.id, 10)
+      return persistedId if !_.isNaN(persistedId) && persistedId > 0
+
+    candidates = App.DomServisDispatchJob.select (item) ->
+      item.service_type is payload.service_type &&
+        item.address is payload.address &&
+        item.client_phone is payload.client_phone &&
+        item.visit_date is payload.visit_date
+
+    latestCandidate = _.last(_.sortBy(candidates, (item) -> item.created_at || ''))
+    fallbackId = parseInt(latestCandidate?.id, 10)
+    return fallbackId if !_.isNaN(fallbackId) && fallbackId > 0
+
+    null
 
   saveEdit: (e) =>
     e.preventDefault()
@@ -360,11 +670,13 @@ class App.DomServisDispatchBoard extends App.Controller
     )
 
   createPayload: ->
-    serviceType = @$('.js-create-service-type').val()?.trim()
-    address = @$('.js-create-address').val()?.trim()
-    clientPhone = @$('.js-create-client-phone').val()?.trim()
-    visitDay = @$('.js-create-visit-day').val()?.trim()
-    visitDate = @$('.js-create-visit-date').val()?.trim()
+    @syncCreateDraftFromForm()
+
+    serviceType = @createDraft.service_type
+    address = @createDraft.address
+    clientPhone = @createDraft.client_phone
+    visitDay = @createDraft.visit_day
+    visitDate = @createDraft.visit_date
 
     if !serviceType
       @notify(type: 'error', msg: 'Укажи тип работ.', timeout: 4000)
@@ -385,15 +697,16 @@ class App.DomServisDispatchBoard extends App.Controller
     {
       service_type: serviceType
       address: address
-      client_name: @$('.js-create-client-name').val()?.trim()
+      client_name: @createDraft.client_name
       client_phone: clientPhone
+      organization_id: @normalizeNumericId(@createDraft.organization_id) || @privateOrganizationId()
       visit_day: visitDay
       visit_date: visitDate || @nextDateForDay(visitDay)
-      visit_time: @$('.js-create-visit-time').val()?.trim()
-      priority: @$('.js-create-priority').val()?.trim() || 'medium'
-      description: @$('.js-create-description').val()?.trim()
-      comment: @$('.js-create-comment').val()?.trim()
-      work_tags: @parseTags(@$('.js-create-work-tags').val())
+      visit_time: @createDraft.visit_time
+      priority: @createDraft.priority || 'medium'
+      description: @createDraft.description
+      comment: @createDraft.comment
+      work_tags: @parseTags(@createDraft.work_tags)
       status: 'pool'
       source: 'manual'
     }
@@ -428,7 +741,7 @@ class App.DomServisDispatchBoard extends App.Controller
     switch field.type
       when 'textarea'
         input.val()?.trim()
-      when 'user_select'
+      when 'user_select', 'organization_select'
         input.val()
       when 'select'
         input.val()
@@ -441,7 +754,7 @@ class App.DomServisDispatchBoard extends App.Controller
     switch fieldKey
       when 'work_tags'
         @parseTags(value)
-      when 'assignee_id'
+      when 'assignee_id', 'organization_id'
         return null if !value
         parseInt(value, 10)
       when 'client_name', 'client_phone', 'visit_time', 'description', 'comment', 'address', 'service_type', 'source', 'visit_date'
@@ -455,7 +768,7 @@ class App.DomServisDispatchBoard extends App.Controller
     if fieldKey is 'work_tags'
       return !_.isEqual(@normalizeTags(currentValue), @normalizeTags(nextValue))
 
-    if fieldKey is 'assignee_id'
+    if fieldKey in ['assignee_id', 'organization_id']
       currentId = if currentValue? then parseInt(currentValue, 10) else null
       nextId = if nextValue? then parseInt(nextValue, 10) else null
       return currentId isnt nextId
@@ -539,17 +852,14 @@ class App.DomServisDispatchBoard extends App.Controller
         status: job.status || 'pool'
         statusLabel: @statusLabel(job.status)
         assigneeName: assigneeName
-        description: job.description || ''
-        comment: job.comment || ''
-        workTags: @normalizeTags(job.work_tags)
+        summaryText: @jobSummaryText(job)
+        visibleTags: @normalizeTags(job.work_tags).slice(0, 2)
+        moreTagsCount: Math.max(@normalizeTags(job.work_tags).length - 2, 0)
         canTake: job.status is 'pool' && @actionAllowed('take_job')
         canRelease: job.assignee_id? && canOperate && @actionAllowed('release_to_pool')
         canStart: canOperate && job.status is 'taken' && @actionAllowed('set_status_in_progress') && @statusAllowed('in_progress')
         canFinish: canOperate && job.status in ['taken', 'in_progress'] && @actionAllowed('set_status_done') && @statusAllowed('done')
         canCancel: dispatcherAccess && job.status in ['pool', 'taken', 'in_progress'] && @actionAllowed('cancel_job') && @statusAllowed('cancelled')
-        canQuickEdit: @actionAllowed('edit_all_fields') || @actionAllowed('change_priority') || @actionAllowed('move_job_day')
-        canChangePriority: @actionAllowed('change_priority') && @fieldEditable('priority')
-        canMoveVisitDay: @actionAllowed('move_job_day') && @fieldEditable('visit_day')
         canEdit: @canOpenEdit(job)
         adminAccess: adminAccess
         masterAccess: masterAccess
@@ -564,6 +874,113 @@ class App.DomServisDispatchBoard extends App.Controller
       title: job.service_type || 'Без названия'
       statusLabel: @statusLabel(job.status)
       scheduleLabel: @scheduleLabel(job)
+    }
+
+  detailEditing: ->
+    return false if !@detailOpen || !@editOpen
+    return false if !@detailJobId || !@editingJobId
+    "#{@detailJobId}" is "#{@editingJobId}"
+
+  buildDetailJobView: (job) ->
+    return null if !job
+
+    tags = @normalizeTags(job.work_tags)
+    currentUserId = App.User.current()?.id
+    canOperate = @dispatcherAccess() || job.assignee_id is currentUserId
+
+    {
+      id: job.id
+      jobCode: job.job_code || @fallbackJobCode(job)
+      title: job.service_type || 'Без названия'
+      status: job.status || 'pool'
+      statusLabel: @statusLabel(job.status)
+      statusClass: job.status || 'pool'
+      priority: job.priority || 'medium'
+      priorityLabel: @priorityLabel(job.priority)
+      assigneeName: @resolveAssigneeName(job)
+      visibleTags: tags.slice(0, 4)
+      hiddenTagsCount: Math.max(tags.length - 4, 0)
+      description: job.description || ''
+      comment: job.comment || ''
+      canEdit: @canOpenEdit(job)
+      canTake: job.status is 'pool' && @actionAllowed('take_job')
+      canRelease: job.assignee_id? && canOperate && @actionAllowed('release_to_pool')
+      canStart: canOperate && job.status is 'taken' && @actionAllowed('set_status_in_progress') && @statusAllowed('in_progress')
+      canFinish: canOperate && job.status in ['taken', 'in_progress'] && @actionAllowed('set_status_done') && @statusAllowed('done')
+      canCancel: @dispatcherAccess() && job.status in ['pool', 'taken', 'in_progress'] && @actionAllowed('cancel_job') && @statusAllowed('cancelled')
+    }
+
+  buildDetailGroups: (job) ->
+    return [] if !job
+
+    [
+      {
+        id: 'job'
+        label: 'Планирование'
+        items: _.compact([
+          @detailItem('Адрес', job.address, true)
+          @detailItem('Дата визита', job.visit_date || 'Не указана')
+          @detailItem('Время визита', job.visit_time || 'Не указано')
+          @detailItem('День недели', @weekdayLabel(@jobVisitDay(job)))
+          @detailItem('Статус', @statusLabel(job.status))
+          @detailItem('Приоритет', @priorityLabel(job.priority))
+          @detailItem('Исполнитель', @resolveAssigneeName(job))
+        ])
+      }
+      {
+        id: 'client'
+        label: 'Клиент'
+        items: _.compact([
+          @detailItem('Имя', job.client_name || 'Не указано')
+          @detailItem('Телефон', job.client_phone || 'Не указан')
+          @detailItem('Заказчик', @resolveOrganizationName(job))
+        ])
+      }
+      {
+        id: 'content'
+        label: 'Содержание'
+        items: _.compact([
+          @detailItem('Тип работ', job.service_type || 'Не указан')
+          @detailItem('Теги', @normalizeTags(job.work_tags).join(', ') || 'Нет')
+          @detailItem('Описание', job.description || 'Нет', true)
+          @detailItem('Комментарий диспетчера', job.comment || 'Нет', true)
+        ])
+      }
+      {
+        id: 'meta'
+        label: 'Системное'
+        items: _.compact([
+          @detailItem('Код заявки', job.job_code || @fallbackJobCode(job))
+          @detailItem('Источник', @sourceLabel(job.source || 'manual'))
+          @detailItem('Backing Ticket', job.ticket_id || 'Ещё не создан')
+        ])
+      }
+    ]
+
+  buildDrawerEditGroups: (job) ->
+    return [] if !job
+
+    _.chain(@buildEditGroups(job))
+      .map((group) ->
+        items = _.filter(group.items, (item) -> item.editable && !item.unsupported && item.key isnt 'attachments')
+        return null if items.length < 1
+
+        {
+          key: group.key
+          label: group.label
+          items: items
+        }
+      )
+      .compact()
+      .value()
+
+  detailItem: (label, value, wide = false) ->
+    return null if !value? || value is ''
+
+    {
+      label: label
+      value: value
+      wide: wide
     }
 
   buildEditGroups: (job) ->
@@ -645,8 +1062,8 @@ class App.DomServisDispatchBoard extends App.Controller
     return false if !job
     return false if !@actionAllowed('edit_all_fields')
 
-    _.some @buildEditGroups(job), (group) ->
-      _.some group.items, (item) -> item.editable || (!item.editable && item.displayValue?)
+    _.some @buildDrawerEditGroups(job), (group) ->
+      _.some group.items, (item) -> item.editable
 
   registryFieldIndex: ->
     result = {}
@@ -731,8 +1148,8 @@ class App.DomServisDispatchBoard extends App.Controller
       cancelled_at:
         type: 'readonly'
         group: 'lifecycle'
-      organization:
-        type: 'unsupported'
+      organization_id:
+        type: 'organization_select'
         group: 'customer'
       attachments:
         type: 'unsupported'
@@ -772,7 +1189,7 @@ class App.DomServisDispatchBoard extends App.Controller
       updated_at: 'Обновлена'
       completed_at: 'Завершена'
       cancelled_at: 'Отменена'
-      organization: 'Организация'
+      organization_id: 'Заказчик'
       attachments: 'Вложения'
 
     labels[fieldKey] || fallback || fieldKey
@@ -793,6 +1210,7 @@ class App.DomServisDispatchBoard extends App.Controller
   fieldHint: (fieldKey, unsupported = false) ->
     return 'Поле уже есть в матрице доступа, но его хранение или отдельный editor будут подключены следующим шагом.' if unsupported
     return 'Список исполнителей строится по активным пользователям Дом-Сервис.' if fieldKey is 'assignee_id'
+    return 'Используется как заказчик / источник заказа: управляющая компания, партнёр или Частный заказ.' if fieldKey is 'organization_id'
     return 'Теги перечисляются через запятую.' if fieldKey is 'work_tags'
     null
 
@@ -804,6 +1222,8 @@ class App.DomServisDispatchBoard extends App.Controller
         @normalizeTags(value).join(', ')
       when 'assignee_id'
         if value? then "#{value}" else ''
+      when 'organization_id'
+        if value? then "#{value}" else "#{@privateOrganizationId() || ''}"
       when 'source'
         value || 'manual'
       when 'priority'
@@ -827,6 +1247,8 @@ class App.DomServisDispatchBoard extends App.Controller
         @weekdayLabel(@jobVisitDay(job))
       when 'assignee_id'
         @resolveAssigneeName(job)
+      when 'organization_id'
+        @resolveOrganizationName(job)
       when 'source'
         @sourceLabel(job.source)
       when 'work_tags'
@@ -853,6 +1275,8 @@ class App.DomServisDispatchBoard extends App.Controller
         ]
       when 'assignee_id'
         [{ id: '', label: 'Не назначен' }].concat(@assigneeOptions())
+      when 'organization_id'
+        @organizationOptions()
       else
         []
 
@@ -871,9 +1295,204 @@ class App.DomServisDispatchBoard extends App.Controller
       .map((user) -> { id: "#{user.id}", label: user.displayName() || user.login || user.email || "##{user.id}" })
       .value()
 
+  organizationOptions: ->
+    options = _.map @organizations, (organization) ->
+      id: "#{organization.id}"
+      label: organization.name || "##{organization.id}"
+
+    privateId = @privateOrganizationId()
+    if privateId? && !_.find(options, (option) -> "#{option.id}" is "#{privateId}")
+      options.unshift(
+        id: "#{privateId}"
+        label: 'Частный заказ'
+      )
+
+    if options.length < 1
+      options.push(
+        id: ''
+        label: 'Частный заказ'
+      )
+
+    options
+
+  privateOrganizationId: ->
+    privateOrganization = _.find(@organizations, (organization) -> organization.name is 'Частный заказ')
+    privateOrganization?.id || null
+
+  resolveOrganizationName: (job) ->
+    organization = job.organization
+    if _.isObject(organization) && organization?.name
+      return organization.name
+
+    organizationId = @jobFieldValue(job, 'organization_id')
+    if organizationId?
+      match = _.find(@organizations, (candidate) -> "#{candidate.id}" is "#{organizationId}")
+      return match.name if match?.name
+
+    'Частный заказ'
+
   currentEditJob: ->
     return null if !@editOpen || !@editingJobId
     @findJob(@editingJobId)
+
+  currentDetailJob: ->
+    return null if !@detailOpen || !@detailJobId
+    @findJob(@detailJobId)
+
+  buildAttachmentList: (job) ->
+    return [] if !job
+    @attachmentCollections["#{job.id}"] || []
+
+  canAddAttachment: (job) ->
+    return false if !job
+    return false if !@actionAllowed('add_attachment')
+
+    if @dispatcherAccess() || @adminAccess()
+      return true
+
+    @masterAccess() && job.assignee_id is App.User.current()?.id
+
+  canDeleteAttachments: ->
+    @actionAllowed('remove_attachment') && (@dispatcherAccess() || @adminAccess())
+
+  attachmentKindOptions: (job) ->
+    return [] if !job
+    return [] if !@canAddAttachment(job)
+
+    labels =
+      intake_attachment: 'Входные материалы'
+      route_info: 'Схема / доступ'
+      completion_act: 'Акт выполненных работ'
+      diagnostic_photo: 'Фото / диагностика'
+      other: 'Прочее'
+
+    if @dispatcherAccess() || @adminAccess()
+      return _.map(['intake_attachment', 'route_info', 'completion_act', 'diagnostic_photo', 'other'], (kind) ->
+        id: kind
+        label: labels[kind]
+      )
+
+    _.map(['completion_act', 'diagnostic_photo', 'other'], (kind) ->
+      id: kind
+      label: labels[kind]
+    )
+
+  createAttachmentKindOptions: ->
+    return [] if !@canCreatePublishedJob()
+
+    [
+      { id: 'intake_attachment', label: 'Входные материалы' }
+      { id: 'route_info', label: 'Схема / доступ' }
+      { id: 'other', label: 'Прочее' }
+    ]
+
+  triggerAttachmentUpload: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    button = $(e.currentTarget)
+    jobId = button.data('id')
+    @$(".js-upload-attachment-input[data-id='#{jobId}']").trigger('click')
+
+  uploadAttachments: (e) =>
+    input = $(e.currentTarget)
+    jobId = input.data('id')
+    files = input.prop('files')
+    return if !jobId || !files || files.length < 1
+
+    kind = @$(".js-attachment-kind[data-id='#{jobId}']").val() || 'other'
+    key = "#{jobId}"
+    formData = new FormData()
+    formData.append('kind', kind)
+    formData.append('File', files[0])
+    csrfToken = App.Ajax.token() || $('meta[name="csrf-token"]').attr('content')
+
+    @attachmentUploading[key] = true
+    @render()
+
+    @uploadAttachmentFile(jobId, files[0], kind)
+      .done =>
+        input.val('')
+        @attachmentUploading[key] = false
+        @notify(type: 'success', msg: 'Р’Р»РѕР¶РµРЅРёРµ РґРѕР±Р°РІР»РµРЅРѕ Рє Р·Р°СЏРІРєРµ.', timeout: 3000)
+        @loadAttachments(jobId, true)
+      .fail (xhr) =>
+        input.val('')
+        @attachmentUploading[key] = false
+        @notify(type: 'error', msg: @extractError(xhr, 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІР»РѕР¶РµРЅРёРµ.'), timeout: 5000)
+        @render()
+    return
+
+    $.ajax(
+      type: 'POST'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs/#{jobId}/attachments"
+      data: formData
+      processData: false
+      contentType: false
+      headers:
+        'X-Requested-With': 'XMLHttpRequest'
+        'X-CSRF-Token': csrfToken
+      success: =>
+        input.val('')
+        @attachmentUploading[key] = false
+        @notify(type: 'success', msg: 'Вложение добавлено к заявке.', timeout: 3000)
+        @loadAttachments(jobId, true)
+      error: (xhr) =>
+        input.val('')
+        @attachmentUploading[key] = false
+        @notify(type: 'error', msg: @extractError(xhr, 'Не удалось загрузить вложение.'), timeout: 5000)
+        @render()
+    )
+
+  uploadAttachmentBatch: (jobId, files, kind) ->
+    deferred = $.Deferred()
+    queue = _.toArray(files || [])
+
+    uploadNext = =>
+      if queue.length < 1
+        deferred.resolve()
+        return
+
+      file = queue.shift()
+      @uploadAttachmentFile(jobId, file, kind)
+        .done(=> uploadNext())
+        .fail((xhr) => deferred.reject(xhr))
+
+    uploadNext()
+    deferred.promise()
+
+  uploadAttachmentFile: (jobId, file, kind) ->
+    formData = new FormData()
+    formData.append('kind', kind || 'other')
+    formData.append('File', file)
+    csrfToken = App.Ajax.token() || $('meta[name="csrf-token"]').attr('content')
+
+    $.ajax(
+      type: 'POST'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs/#{jobId}/attachments"
+      data: formData
+      processData: false
+      contentType: false
+      headers:
+        'X-Requested-With': 'XMLHttpRequest'
+        'X-CSRF-Token': csrfToken
+    )
+
+  removeAttachment: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    button = $(e.currentTarget)
+    jobId = button.data('job-id')
+    attachmentId = button.data('attachment-id')
+    return if !jobId || !attachmentId
+
+    @ajax(
+      id: "dom_servis_dispatch_attachment_remove_#{attachmentId}"
+      type: 'DELETE'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs/#{jobId}/attachments/#{attachmentId}"
+      success: =>
+        @notify(type: 'success', msg: 'Вложение удалено.', timeout: 3000)
+        @loadAttachments(jobId, true)
+      error: (xhr) =>
+        @notify(type: 'error', msg: @extractError(xhr, 'Не удалось удалить вложение.'), timeout: 5000)
+    )
 
   findJob: (id) ->
     _.find @jobs, (job) -> "#{job.id}" is "#{id}"
@@ -935,6 +1554,40 @@ class App.DomServisDispatchBoard extends App.Controller
 
     'Свободна'
 
+  buildCurrentUserCard: ->
+    currentUser = App.User.current()
+    userNative = if currentUser?.id && App.User.exists(currentUser.id) then App.User.findNative(currentUser.id) else currentUser
+    organizationName = userNative?.organization?.name || currentUser?.organization?.name || 'Без организации'
+    phoneValue = userNative?.phone || userNative?.mobile || currentUser?.phone || currentUser?.mobile || 'Не указан'
+
+    displayName = if userNative?.displayName then userNative.displayName() else if currentUser?.displayName then currentUser.displayName() else @fallbackUserName(currentUser)
+    initials = if userNative?.initials then userNative.initials() else if currentUser?.initials then currentUser.initials() else 'DS'
+
+    {
+      name: displayName
+      email: userNative?.email || currentUser?.email || currentUser?.login || 'Не указан'
+      phone: phoneValue
+      organization: organizationName
+      initials: initials
+    }
+
+  fallbackUserName: (user) ->
+    return 'Пользователь Дом-Сервис' if !user
+
+    fullName = _.compact([user.firstname, user.lastname]).join(' ').trim()
+    return fullName if fullName.length > 0
+    user.login || user.email || "##{user.id}"
+
+  jobSummaryText: (job) ->
+    summary = job.description || job.comment || ''
+    summary = @normalizeWhitespace(summary)
+    return '' if summary.length is 0
+    return summary if summary.length <= 110
+    "#{summary.slice(0, 107)}..."
+
+  normalizeWhitespace: (value) ->
+    "#{value || ''}".replace(/\s+/g, ' ').trim()
+
   roleLabel: ->
     return 'Владелец/администратор' if @adminAccess()
     return 'Диспетчер' if @dispatcherOnlyAccess()
@@ -981,6 +1634,9 @@ class App.DomServisDispatchBoard extends App.Controller
 
     if fieldKey is 'assignee_id'
       return @actionAllowed('change_assignee')
+
+    if fieldKey is 'organization_id'
+      return true
 
     if fieldKey is 'comment'
       return @actionAllowed('add_comment')
@@ -1172,6 +1828,7 @@ class App.DomServisDispatchBoard extends App.Controller
       'address'
       'client_name'
       'client_phone'
+      'organization_id'
       'service_type'
       'description'
       'comment'
@@ -1184,9 +1841,14 @@ class App.DomServisDispatchBoard extends App.Controller
       'updated_at'
       'completed_at'
       'cancelled_at'
-      'organization'
       'attachments'
     ]
+
+  normalizeNumericId: (value) ->
+    return null if !value? || "#{value}".length is 0
+    parsed = parseInt(value, 10)
+    return null if isNaN(parsed)
+    parsed
 
   statusLabel: (status) ->
     switch status
