@@ -385,7 +385,7 @@ class App.DomServisDispatchBoard extends App.Controller
         @formEnable(@$('.js-create-job'), 'button')
         @notify(
           type: 'error'
-          msg: @extractError(xhr, 'Р—Р°СЏРІРєСѓ РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ.')
+          msg: @extractError(xhr, 'Заявку не удалось создать.')
           timeout: 6000
         )
     )
@@ -422,7 +422,7 @@ class App.DomServisDispatchBoard extends App.Controller
     finalizeSuccess = =>
       @notify(
         type: 'success'
-        msg: 'Р—Р°СЏРІРєР° СЃРѕР·РґР°РЅР° Рё РѕРїСѓР±Р»РёРєРѕРІР°РЅР° РІ РїСѓР».'
+        msg: 'Заявка создана и опубликована в пул.'
         timeout: 3000
       )
       @createOpen = false
@@ -435,7 +435,7 @@ class App.DomServisDispatchBoard extends App.Controller
     finalizePartialFailure = =>
       @notify(
         type: 'error'
-        msg: 'Р—Р°СЏРІРєР° СЃРѕР·РґР°РЅР°, РЅРѕ РІР»РѕР¶РµРЅРёСЏ РЅРµ Р·Р°РіСЂСѓР·РёР»РёСЃСЊ. РС… РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РїРѕС‚РѕРј РІ РєР°СЂС‚РѕС‡РєРµ Р·Р°СЏРІРєРё.'
+        msg: 'Заявка создана, но вложения не загрузились. Их можно добавить потом в карточке заявки.'
         timeout: 7000
       )
       @createOpen = false
@@ -1512,12 +1512,12 @@ class App.DomServisDispatchBoard extends App.Controller
       .done =>
         input.val('')
         @attachmentUploading[key] = false
-        @notify(type: 'success', msg: 'Р’Р»РѕР¶РµРЅРёРµ РґРѕР±Р°РІР»РµРЅРѕ Рє Р·Р°СЏРІРєРµ.', timeout: 3000)
+        @notify(type: 'success', msg: 'Вложение добавлено к заявке.', timeout: 3000)
         @loadAttachments(jobId, true)
       .fail (xhr) =>
         input.val('')
         @attachmentUploading[key] = false
-        @notify(type: 'error', msg: @extractError(xhr, 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІР»РѕР¶РµРЅРёРµ.'), timeout: 5000)
+        @notify(type: 'error', msg: @extractError(xhr, 'Не удалось загрузить вложение.'), timeout: 5000)
         @render()
     return
 
