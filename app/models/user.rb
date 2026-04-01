@@ -56,6 +56,7 @@ class User < ApplicationModel
   before_update     :validate_preferences, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
+  after_commit      :bootstrap_dom_servis_roles, on: :create
 
   validate :ensure_identifier, :ensure_email
   validate :ensure_uniq_email, unless: :skip_ensure_uniq_email
@@ -1132,6 +1133,17 @@ raise 'At least one user need to have admin permissions'
   # update caller ID table
   # to adopt/orphan matching Cti::Logs accordingly
   # (see https://github.com/zammad/zammad/issues/2057)
+  def bootstrap_dom_servis_roles
+    return if !permissions?('admin')
+    return if DomServis::DispatchRoleCatalog.seeded?
+    return if !DomServis::DispatchRoleCatalog.sync!(actor_id: id)
+
+    admin_overlay_role = Role.find_by(name: 'Dom-Servis Admin')
+    return if !admin_overlay_role || role?('Dom-Servis Admin')
+
+    roles << admin_overlay_role
+  end
+
   def update_caller_id
     # skip if "phone/mobile" does not change, or changes like [nil, ""]
     return if persisted? && previous_changes.slice(:phone, :mobile).values.flatten.none?(&:present?)
