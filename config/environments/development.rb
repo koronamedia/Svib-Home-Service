@@ -76,6 +76,12 @@ Rails.application.configure do
   # Set log level via environment variable, defaults to debug
   config.log_level = ENV.fetch('RAILS_DEVELOPMENT_LOG_LEVEL', 'debug')
 
+  if ENV['RAILS_LOG_TO_STDOUT'].present?
+    logger           = ActiveSupport::Logger.new($stdout)
+    logger.formatter = config.log_formatter
+    config.logger    = ActiveSupport::TaggedLogging.new(logger)
+  end
+
   # Enable server timing headers
   config.server_timing = true
 end

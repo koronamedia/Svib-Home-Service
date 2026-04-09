@@ -29,7 +29,7 @@ RUN apt-get update -qq && \
 
 # Throw-away stage to get the node binary
 FROM node:${NODE_VERSION}-trixie-slim AS node
-RUN npm -g install corepack && corepack enable pnpm && \
+RUN corepack enable pnpm && \
     rm /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 # Throw-away build stage to reduce size of final image
