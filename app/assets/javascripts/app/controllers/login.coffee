@@ -103,7 +103,7 @@ class Login extends App.ControllerFullPage
       logoUrl:          @logoUrl()
       auth_providers:   auth_providers
       public_links:     public_links
-      show_mobile_link: App.MobileDetection.isMobile() or App.MobileDetection.isForcingDesktopView()
+      show_mobile_link: App.MobileDetection.isMobile() or App.MobileDetection.isCompactViewport() or App.MobileDetection.isForcingDesktopView()
     )
 
     # set focus to username or password
@@ -166,6 +166,11 @@ class Login extends App.ControllerFullPage
     )
 
   success: (data, status, xhr) =>
+
+    if App.MobileDetection.shouldPreferDispatchLanding()
+      @log 'notice', 'REDIRECT to -#dom_servis/dispatch-'
+      @navigate '#dom_servis/dispatch'
+      return
 
     # redirect to #
     @log 'notice', 'REDIRECT to -#/-'

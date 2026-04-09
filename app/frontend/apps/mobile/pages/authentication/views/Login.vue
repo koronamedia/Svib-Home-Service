@@ -15,7 +15,12 @@ import { usePublicLinks } from '#shared/composables/usePublicLinks.ts'
 import type UserError from '#shared/errors/UserError.ts'
 import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
 
+import {
+  domServisDispatchDesktopPath,
+  hasDomServisDispatchAccess,
+} from '#mobile/lib/domServisDispatch.ts'
 import LoginCredentialsForm from '../components/LoginCredentialsForm.vue'
 import LoginFooter from '../components/LoginFooter.vue'
 import LoginHeader from '../components/LoginHeader.vue'
@@ -26,6 +31,7 @@ import LoginTwoFactorMethods from '../components/LoginTwoFactorMethods.vue'
 
 const route = useRoute()
 const router = useRouter()
+const session = useSessionStore()
 
 const { notify, clearAllNotifications } = useNotifications()
 
@@ -70,6 +76,8 @@ const finishLogin = () => {
   const { redirect: redirectUrl } = route.query
   if (typeof redirectUrl === 'string') {
     router.replace(redirectUrl)
+  } else if (hasDomServisDispatchAccess(session)) {
+    window.location.href = domServisDispatchDesktopPath
   } else {
     router.replace('/')
   }

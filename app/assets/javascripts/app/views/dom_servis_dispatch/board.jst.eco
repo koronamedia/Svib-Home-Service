@@ -1,9 +1,23 @@
-<div class="dom-servis-dispatch-board__shell">
+<div class="dom-servis-dispatch-board__shell<%= ' is-mobile' if @mobileView %>">
   <div class="dom-servis-dispatch-board__hero">
     <div class="dom-servis-dispatch-board__hero-copy">
       <div class="dom-servis-dispatch-board__eyebrow">Дом-Сервис</div>
       <h1>Диспетчеризация заявок</h1>
       <p>Главное рабочее поле для публикации заявок в общий пул, захвата мастерами и ежедневного контроля по дням недели.</p>
+      <% if @mobileView: %>
+        <div class="dom-servis-dispatch-board__mobile-summary">
+          <div class="dom-servis-dispatch-board__mobile-summary-card">
+            <span><%= @mobileLabels.week %></span>
+            <strong><%= @weekControls.startLabel %> - <%= @weekControls.endLabel %></strong>
+          </div>
+          <% if @activeFilterSummary.length > 0: %>
+            <div class="dom-servis-dispatch-board__mobile-summary-card">
+              <span><%= @mobileLabels.filters %></span>
+              <strong><%= @activeFilterSummary.join(' / ') %></strong>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
     </div>
     <div class="dom-servis-dispatch-board__hero-side">
       <% if @currentUserCard: %>
@@ -58,7 +72,8 @@
     </div>
   </div>
 
-  <div class="dom-servis-dispatch-board__control-block">
+  <div class="dom-servis-dispatch-board__controls">
+    <div class="dom-servis-dispatch-board__control-block">
     <div class="dom-servis-dispatch-board__control-label">Срез по состоянию</div>
     <div class="dom-servis-dispatch-board__filters">
       <% for item in @statusFilters: %>
@@ -68,9 +83,9 @@
         </button>
       <% end %>
     </div>
-  </div>
+    </div>
 
-  <div class="dom-servis-dispatch-board__control-block">
+    <div class="dom-servis-dispatch-board__control-block">
     <div class="dom-servis-dispatch-board__control-label">Дни недели</div>
     <div class="dom-servis-dispatch-board__week-bar">
       <div class="dom-servis-dispatch-board__week-actions">
@@ -91,10 +106,10 @@
         </button>
       <% end %>
     </div>
-  </div>
+    </div>
 
   <% if @tagFilters.length > 0: %>
-    <div class="dom-servis-dispatch-board__control-block">
+      <div class="dom-servis-dispatch-board__control-block">
       <div class="dom-servis-dispatch-board__control-label">Теги</div>
       <div class="dom-servis-dispatch-board__filters dom-servis-dispatch-board__filters--tags">
         <% for item in @tagFilters: %>
@@ -107,8 +122,9 @@
           <button class="btn btn--text js-clear-tag-filters">Сбросить</button>
         <% end %>
       </div>
-    </div>
+      </div>
   <% end %>
+  </div>
 
   <% if @loading: %>
     <div class="dom-servis-dispatch-board__empty">
@@ -161,6 +177,18 @@
             <div class="dom-servis-dispatch-card__summary"><%= job.summaryText %></div>
           <% end %>
 
+          <% if @mobileView && job.primaryAction: %>
+            <div class="dom-servis-dispatch-card__actions dom-servis-dispatch-card__actions--mobile">
+              <button
+                class="btn <%= job.primaryAction.buttonClass %> <%= job.primaryAction.handlerClass %> js-no-detail"
+                data-id="<%= job.id %>"
+                <%= "data-status=\"#{job.primaryAction.status}\"" if job.primaryAction.status %>>
+                <%= job.primaryAction.label %>
+              </button>
+              <div class="dom-servis-dispatch-card__tap-hint"><%= @mobileLabels.openDetailsHint %></div>
+            </div>
+          <% end %>
+
         </article>
       <% end %>
     </div>
@@ -174,6 +202,7 @@
           <div class="dom-servis-dispatch-drawer__headline">
             <div class="dom-servis-dispatch-drawer__code"><%= @detailJob.jobCode %></div>
             <h2><%= @detailJob.title %></h2>
+            <div class="dom-servis-dispatch-drawer__schedule"><%= @detailJob.scheduleLabel %></div>
             <div class="dom-servis-dispatch-drawer__status-row">
               <span class="dom-servis-dispatch-card__status dom-servis-dispatch-card__status--<%= @detailJob.statusClass %>"><%= @detailJob.statusLabel %></span>
               <span class="dom-servis-dispatch-card__priority dom-servis-dispatch-card__priority--<%= @detailJob.priority %>"><%= @detailJob.priorityLabel %></span>
@@ -331,7 +360,7 @@
           </section>
         </div>
 
-        <div class="dom-servis-dispatch-drawer__footer">
+        <div class="dom-servis-dispatch-drawer__footer<%= ' dom-servis-dispatch-drawer__footer--mobile' if @mobileView %>">
           <div class="dom-servis-dispatch-card__actions">
             <% if @detailEditing: %>
               <button class="btn js-close-edit">Отмена</button>
@@ -508,4 +537,3 @@
     </div>
   <% end %>
 </div>
-

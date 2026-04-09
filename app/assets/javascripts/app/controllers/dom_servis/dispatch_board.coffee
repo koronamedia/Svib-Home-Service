@@ -63,6 +63,8 @@ class App.DomServisDispatchBoard extends App.Controller
     @createAttachmentFiles = []
     @createAttachmentUploading = false
     @createAttachmentKind = 'intake_attachment'
+    @initViewportMode()
+    @bindRouteWatcher()
     @resetCreateDraft()
 
     @render()
@@ -83,6 +85,11 @@ class App.DomServisDispatchBoard extends App.Controller
     @navupdate '#dom_servis/dispatch'
     @render() if !@loading
 
+  release: =>
+    @stopViewportWatcher()
+    @stopRouteWatcher()
+    @syncMobileShellState(false)
+
   render: ->
     defaultVisitDay = @defaultVisitDay()
     detailJob = @currentDetailJob()
@@ -91,10 +98,13 @@ class App.DomServisDispatchBoard extends App.Controller
     @html App.view('dom_servis_dispatch/board')(
       loading: @loading
       error: @errorMessage
+      mobileView: @mobileView
       dispatcherAccess: @dispatcherAccess()
       masterAccess: @masterAccess()
+      mobileLabels: @mobileLabels()
       roleLabel: @roleLabel()
       currentUserCard: @buildCurrentUserCard()
+      activeFilterSummary: @buildActiveFilterSummary()
       canCreateJob: @canCreatePublishedJob()
       createDraft: @createDraft
       createAttachmentKinds: @createAttachmentKindOptions()
@@ -128,6 +138,49 @@ class App.DomServisDispatchBoard extends App.Controller
       defaultVisitDate: @nextDateForDay(defaultVisitDay)
       todayLabel: @weekdayLabel(defaultVisitDay)
     )
+
+    @el.toggleClass('is-mobile', @mobileView)
+    @syncMobileShellState(@mobileView)
+
+  initViewportMode: ->
+    @mobileMediaQuery = window.matchMedia('(max-width: 767px)')
+    @mobileView = @mobileMediaQuery.matches
+    @viewportModeListener = => @syncViewportMode()
+
+    if typeof @mobileMediaQuery.addEventListener is 'function'
+      @mobileMediaQuery.addEventListener('change', @viewportModeListener)
+    else if typeof @mobileMediaQuery.addListener is 'function'
+      @mobileMediaQuery.addListener(@viewportModeListener)
+
+  stopViewportWatcher: ->
+    return if !@mobileMediaQuery || !@viewportModeListener
+
+    if typeof @mobileMediaQuery.removeEventListener is 'function'
+      @mobileMediaQuery.removeEventListener('change', @viewportModeListener)
+    else if typeof @mobileMediaQuery.removeListener is 'function'
+      @mobileMediaQuery.removeListener(@viewportModeListener)
+
+    @viewportModeListener = null
+
+  bindRouteWatcher: ->
+    @routeWatcher = => @syncMobileShellState(@mobileView)
+    $(window).on('hashchange.domServisDispatchMobileShell', @routeWatcher)
+
+  stopRouteWatcher: ->
+    return if !@routeWatcher
+    $(window).off('hashchange.domServisDispatchMobileShell', @routeWatcher)
+    @routeWatcher = null
+
+  syncViewportMode: ->
+    nextValue = @mobileMediaQuery?.matches || window.matchMedia('(max-width: 767px)').matches
+    return if @mobileView is nextValue
+
+    @mobileView = nextValue
+    @render()
+
+  syncMobileShellState: (enabled) ->
+    dispatchRouteActive = App.MobileDetection.desktopShellRequiredForHash(window.location.hash)
+    $('body').toggleClass('dom-servis-dispatch-mobile-shell', enabled is true and dispatchRouteActive)
 
   loadJobs: =>
     @loading = true
@@ -924,6 +977,27 @@ class App.DomServisDispatchBoard extends App.Controller
       .sortBy((item) -> if item.active then 0 else 1)
       .value()
 
+  buildActiveFilterSummary: ->
+    items = []
+
+    statusItem = _.find(@buildScopedStatusFilters(), (item) -> item.active)
+    if statusItem?.id && statusItem.id isnt 'open'
+      items.push(statusItem.label)
+
+    dayItem = _.find(@buildDayFilters(), (item) -> item.active)
+    if dayItem?.id && dayItem.id isnt 'all'
+      items.push(dayItem.label)
+
+    items = items.concat(@activeTagFilters) if @activeTagFilters.length > 0
+    items
+
+  mobileLabels: ->
+    {
+      week: 'Неделя'
+      filters: 'Фильтры'
+      openDetailsHint: 'Касание по карточке откроет все детали.'
+    }
+
   buildJobCards: ->
     currentUserId = App.User.current()?.id
     dispatcherAccess = @dispatcherAccess()
@@ -935,7 +1009,7 @@ class App.DomServisDispatchBoard extends App.Controller
       visitDay = @jobVisitDay(job)
       canOperate = dispatcherAccess || job.assignee_id is currentUserId
 
-      {
+      card =
         id: job.id
         jobCode: job.job_code || @fallbackJobCode(job)
         serviceType: job.service_type || 'Без названия'
@@ -963,7 +1037,28 @@ class App.DomServisDispatchBoard extends App.Controller
         canEdit: @canOpenEdit(job)
         adminAccess: adminAccess
         masterAccess: masterAccess
-      }
+      card.primaryAction = @buildCardPrimaryAction(card)
+      card
+
+  buildCardPrimaryAction: (card) ->
+    return null if !card
+
+    if card.canTake
+      return { label: 'Взять', buttonClass: 'btn--success', handlerClass: 'js-take-job' }
+
+    if card.canStart
+      return { label: 'В работу', buttonClass: 'btn--primary', handlerClass: 'js-set-status', status: 'in_progress' }
+
+    if card.canFinish
+      return { label: 'Готово', buttonClass: 'btn--success', handlerClass: 'js-set-status', status: 'done' }
+
+    if card.canRelease
+      return { label: 'В пул', buttonClass: 'btn--text', handlerClass: 'js-release-job' }
+
+    if card.canEdit
+      return { label: 'Редактировать', buttonClass: 'btn--text', handlerClass: 'js-open-edit' }
+
+    null
 
   buildEditJobView: (job) ->
     return null if !job
@@ -997,6 +1092,7 @@ class App.DomServisDispatchBoard extends App.Controller
       statusClass: job.status || 'pool'
       priority: job.priority || 'medium'
       priorityLabel: @priorityLabel(job.priority)
+      scheduleLabel: @scheduleLabel(job)
       assigneeName: @resolveAssigneeName(job)
       visibleTags: @tagBadgeItems(tags, 4)
       hiddenTagsCount: Math.max(tags.length - 4, 0)

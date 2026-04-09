@@ -10,33 +10,50 @@ import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectio
 import type { MenuItem } from '#mobile/components/CommonSectionMenu/index.ts'
 import CommonTicketCreateLink from '#mobile/components/CommonTicketCreateLink/CommonTicketCreateLink.vue'
 import { useTicketOverviews } from '#mobile/entities/ticket/composables/useTicketOverviews.ts'
+import {
+  domServisDispatchDesktopPath,
+  hasDomServisDispatchAccess,
+} from '#mobile/lib/domServisDispatch.ts'
 
 const IS_DEV = import.meta.env.DEV
 
 const session = useSessionStore()
 
-const menu: MenuItem[] = [
-  {
+const menu = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = []
+
+  if (hasDomServisDispatchAccess(session)) {
+    items.push({
+      type: 'link',
+      link: domServisDispatchDesktopPath,
+      label: 'Диспетчерская доска',
+      information: 'Дом-Сервис',
+      icon: { name: 'mobile-tasklist', size: 'base' },
+      iconBg: 'bg-blue',
+    })
+  }
+
+  items.push({
     type: 'link',
     link: '/tickets/view',
     label: __('Ticket overviews'),
     icon: { name: 'all-tickets', size: 'base' },
     iconBg: 'bg-pink',
     permission: ['ticket.agent', 'ticket.customer'],
-  },
-  // Cannot inline import.meta here, Vite fails
-  ...(IS_DEV
-    ? [
-        {
-          type: 'link' as const,
-          link: '/playground',
-          label: 'Playground',
-          icon: { name: 'settings', size: 'small' as const },
-          iconBg: 'bg-orange',
-        },
-      ]
-    : []),
-]
+  })
+
+  if (IS_DEV) {
+    items.push({
+      type: 'link',
+      link: '/playground',
+      label: 'Playground',
+      icon: { name: 'settings', size: 'small' as const },
+      iconBg: 'bg-orange',
+    })
+  }
+
+  return items
+})
 
 const overviews = useTicketOverviews()
 
@@ -63,7 +80,14 @@ const ticketOverview = computed<MenuItem[]>(() => {
     <CommonLink :aria-label="$t('Search…')" link="/search">
       <CommonInputSearch aria-hidden="true" tabindex="-1" wrapper-class="mb-4" no-border />
     </CommonLink>
-    <CommonSectionMenu :items="menu" />
+    <CommonSectionMenu
+      :items="menu"
+      :help="
+        hasDomServisDispatchAccess(session)
+          ? 'Основной рабочий экран мастера и диспетчера открывается через Дом-Сервис.'
+          : undefined
+      "
+    />
     <CommonSectionMenu
       v-if="session.hasPermission(['ticket.agent', 'ticket.customer'])"
       :items="ticketOverview"
