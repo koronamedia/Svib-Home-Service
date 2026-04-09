@@ -30,4 +30,16 @@ describe('testing home section menu', () => {
 
     expect(ticketOverviewLink).toHaveAttribute('href', '/mobile/tickets/view')
   })
+
+  it('shows Dom-Servis entry for dispatch roles', async () => {
+    mockPermissions(['dom_servis.master'])
+
+    const view = await visitView('/')
+
+    const dispatchLink = view.getByRole('link', {
+      name: 'Диспетчерская доска',
+    })
+
+    expect(dispatchLink).toHaveAttribute('href', '/mobile/dom-servis/dispatch')
+  })
 })

@@ -21,15 +21,31 @@
     </div>
     <div class="dom-servis-dispatch-board__hero-side">
       <% if @currentUserCard: %>
-        <div class="dom-servis-dispatch-board__user-card">
-          <div class="dom-servis-dispatch-board__user-avatar"><%= @currentUserCard.initials %></div>
-          <div class="dom-servis-dispatch-board__user-body">
-            <div class="dom-servis-dispatch-board__user-name"><%= @currentUserCard.name %></div>
-            <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.email %></div>
-            <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.phone %></div>
-            <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.organization %></div>
+        <% if @mobileView: %>
+          <button type="button" class="dom-servis-dispatch-board__user-card dom-servis-dispatch-board__user-card--action js-open-mobile-account-menu">
+            <div class="dom-servis-dispatch-board__user-avatar"><%= @currentUserCard.initials %></div>
+            <div class="dom-servis-dispatch-board__user-body">
+              <div class="dom-servis-dispatch-board__user-name"><%= @currentUserCard.name %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.email %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.phone %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.organization %></div>
+              <div class="dom-servis-dispatch-board__user-shortcut">
+                <span><%= @mobileLabels.accountActionsHint %></span>
+                <strong><%= @mobileLabels.accountActionsArrow %></strong>
+              </div>
+            </div>
+          </button>
+        <% else: %>
+          <div class="dom-servis-dispatch-board__user-card">
+            <div class="dom-servis-dispatch-board__user-avatar"><%= @currentUserCard.initials %></div>
+            <div class="dom-servis-dispatch-board__user-body">
+              <div class="dom-servis-dispatch-board__user-name"><%= @currentUserCard.name %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.email %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.phone %></div>
+              <div class="dom-servis-dispatch-board__user-meta"><%= @currentUserCard.organization %></div>
+            </div>
           </div>
-        </div>
+        <% end %>
       <% end %>
       <div class="dom-servis-dispatch-board__role"><span>Роль</span><strong><%= @roleLabel %></strong></div>
       <div class="dom-servis-dispatch-board__header-actions">
@@ -534,6 +550,36 @@
           </div>
         </div>
       </div>
+    </div>
+  <% end %>
+
+  <% if @mobileView && @mobileWorkspaceMenuOpen && @currentUserCard: %>
+    <div class="dom-servis-dispatch-mobile-menu">
+      <button type="button" class="dom-servis-dispatch-mobile-menu__backdrop js-close-mobile-account-menu"></button>
+      <aside class="dom-servis-dispatch-mobile-menu__sheet" role="dialog" aria-modal="true" aria-label="<%= @mobileLabels.accountMenuTitle %>">
+        <div class="dom-servis-dispatch-mobile-menu__header">
+          <div>
+            <div class="dom-servis-dispatch-mobile-menu__eyebrow"><%= @mobileLabels.accountMenuEyebrow %></div>
+            <h2><%= @mobileLabels.accountMenuTitle %></h2>
+          </div>
+          <button class="btn btn--text js-close-mobile-account-menu"><%= @mobileLabels.closeAction %></button>
+        </div>
+
+        <div class="dom-servis-dispatch-mobile-menu__summary">
+          <div class="dom-servis-dispatch-board__user-avatar"><%= @currentUserCard.initials %></div>
+          <div class="dom-servis-dispatch-mobile-menu__summary-body">
+            <strong><%= @currentUserCard.name %></strong>
+            <span><%= @roleLabel %></span>
+            <span><%= @currentUserCard.email %></span>
+          </div>
+        </div>
+
+        <div class="dom-servis-dispatch-mobile-menu__actions">
+          <button class="btn btn--text js-mobile-workspace-nav" data-target="#profile"><%= @mobileLabels.profileAction %></button>
+          <button class="btn btn--text js-mobile-workspace-nav" data-target="#dashboard"><%= @mobileLabels.dashboardAction %></button>
+          <button class="btn btn--danger js-mobile-workspace-nav" data-target="#logout"><%= @mobileLabels.logoutAction %></button>
+        </div>
+      </aside>
     </div>
   <% end %>
 </div>

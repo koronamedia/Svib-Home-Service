@@ -44,7 +44,7 @@ describe('account page', () => {
   })
 
   it('can view my account page', async () => {
-    mockPermissions(['user_preferences.avatar', 'user_preferences.language', 'admin'])
+    mockPermissions(['user_preferences.avatar', 'user_preferences.language', 'admin', 'dom_servis.master'])
 
     const languageApi = mockGraphQLApi(ProductAboutDocument).willResolve({
       productAbout: 'v1.0.0',
@@ -58,6 +58,7 @@ describe('account page', () => {
     expect(mainContent, 'have avatar').toHaveTextContent('JD')
     expect(mainContent, 'have my name').toHaveTextContent('John Doe')
     expect(mainContent, 'have logout button').toHaveTextContent('Sign out')
+    expect(mainContent, 'has Dom-Servis entry').toHaveTextContent('Дом-Сервис')
     expect(mainContent, 'has language').toHaveTextContent('Deutsch')
 
     expect(languageApi.spies.resolve).toHaveBeenCalled()

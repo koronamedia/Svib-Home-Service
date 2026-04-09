@@ -4,6 +4,7 @@ import { flushPromises } from '@vue/test-utils'
 
 import { renderComponent } from '#tests/support/components/index.ts'
 import { mockGraphQLSubscription } from '#tests/support/mock-graphql-api.ts'
+import { mockPermissions } from '#tests/support/mock-permissions.ts'
 
 import { OnlineNotificationsCountDocument } from '#shared/entities/online-notification/graphql/subscriptions/onlineNotificationsCount.api.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
@@ -62,5 +63,29 @@ describe('bottom navigation in layout', () => {
     })
 
     expect(view.getByRole('status', { name: 'Unread notifications' })).toHaveTextContent('1')
+  })
+
+  it('shows Dom-Servis tab for dispatch roles', async () => {
+    mockPermissions(['dom_servis.master'])
+    mockGraphQLSubscription(OnlineNotificationsCountDocument)
+
+    const view = renderComponent(LayoutBottomNavigation, {
+      store: true,
+      router: true,
+    })
+    const store = useSessionStore()
+
+    store.user = {
+      id: convertToGraphQLId('User', 100),
+      firstname: 'User',
+      lastname: 'Test',
+      permissions: { names: ['dom_servis.master'] },
+    } as UserData
+
+    await flushPromises()
+
+    const dispatchLink = view.getByLabelText('Дом-Сервис')
+
+    expect(dispatchLink).toHaveAttribute('href', '/mobile/dom-servis/dispatch')
   })
 })

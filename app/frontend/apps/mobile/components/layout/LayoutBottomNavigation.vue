@@ -6,11 +6,17 @@ import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvat
 import { useOnlineNotificationCount } from '#shared/entities/online-notification/composables/useOnlineNotificationCount.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 
+import {
+  domServisDispatchMobilePath,
+  hasDomServisDispatchAccess,
+} from '#mobile/lib/domServisDispatch.ts'
 import { useCustomLayout } from './useCustomLayout.ts'
 
-const user = toRef(useSessionStore(), 'user')
+const session = useSessionStore()
+const user = toRef(session, 'user')
 const { isCustomLayout } = useCustomLayout()
 const { unseenCount } = useOnlineNotificationCount()
+const showDomServisDispatch = computed(() => hasDomServisDispatchAccess(session))
 
 const notificationCount = computed(() => {
   if (!unseenCount.value) return ''
@@ -28,6 +34,15 @@ const notificationCount = computed(() => {
     <div v-if="!isCustomLayout" class="flex h-14 w-full items-center text-center">
       <CommonLink link="/" class="flex flex-1 justify-center" exact-active-class="text-blue">
         <CommonIcon name="home" />
+      </CommonLink>
+      <CommonLink
+        v-if="showDomServisDispatch"
+        :link="domServisDispatchMobilePath"
+        exact-active-class="text-blue"
+        class="flex flex-1 justify-center"
+        aria-label="Дом-Сервис"
+      >
+        <CommonIcon name="mobile-tasklist" decorative />
       </CommonLink>
       <CommonLink
         link="/notifications"

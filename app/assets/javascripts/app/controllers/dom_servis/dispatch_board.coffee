@@ -16,6 +16,9 @@ class App.DomServisDispatchBoard extends App.Controller
     'click .js-open-edit': 'openEdit'
     'click .js-close-edit': 'closeEdit'
     'click .js-refresh-jobs': 'refreshJobs'
+    'click .js-open-mobile-account-menu': 'openMobileAccountMenu'
+    'click .js-close-mobile-account-menu': 'closeMobileAccountMenu'
+    'click .js-mobile-workspace-nav': 'navigateFromMobileWorkspaceMenu'
     'click .js-create-job': 'createJob'
     'input .js-create-draft-field': 'updateCreateDraft'
     'change .js-create-draft-field': 'updateCreateDraft'
@@ -63,6 +66,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @createAttachmentFiles = []
     @createAttachmentUploading = false
     @createAttachmentKind = 'intake_attachment'
+    @mobileWorkspaceMenuOpen = false
     @initViewportMode()
     @bindRouteWatcher()
     @resetCreateDraft()
@@ -99,6 +103,7 @@ class App.DomServisDispatchBoard extends App.Controller
       loading: @loading
       error: @errorMessage
       mobileView: @mobileView
+      mobileWorkspaceMenuOpen: @mobileWorkspaceMenuOpen
       dispatcherAccess: @dispatcherAccess()
       masterAccess: @masterAccess()
       mobileLabels: @mobileLabels()
@@ -139,6 +144,7 @@ class App.DomServisDispatchBoard extends App.Controller
       todayLabel: @weekdayLabel(defaultVisitDay)
     )
 
+    @$('.js-refresh-jobs').text(@mobileLabels().refreshAction)
     @el.toggleClass('is-mobile', @mobileView)
     @syncMobileShellState(@mobileView)
 
@@ -176,11 +182,38 @@ class App.DomServisDispatchBoard extends App.Controller
     return if @mobileView is nextValue
 
     @mobileView = nextValue
+    @mobileWorkspaceMenuOpen = false if !@mobileView
     @render()
 
   syncMobileShellState: (enabled) ->
     dispatchRouteActive = App.MobileDetection.desktopShellRequiredForHash(window.location.hash)
     $('body').toggleClass('dom-servis-dispatch-mobile-shell', enabled is true and dispatchRouteActive)
+
+  openMobileAccountMenu: (e) =>
+    return if !@mobileView
+    @preventDefaultAndStopPropagation(e)
+    @mobileWorkspaceMenuOpen = true
+    @render()
+
+  closeMobileAccountMenu: (e) =>
+    @preventDefaultAndStopPropagation(e) if e
+    return if !@mobileWorkspaceMenuOpen
+    @mobileWorkspaceMenuOpen = false
+    @render()
+
+  navigateFromMobileWorkspaceMenu: (e) =>
+    @preventDefaultAndStopPropagation(e)
+    target = $(e.currentTarget).data('target')?.toString()?.trim()
+    return if !target
+
+    @mobileWorkspaceMenuOpen = false
+    @render()
+
+    if target is '#logout'
+      window.location.hash = target
+      return
+
+    @navigate(target)
 
   loadJobs: =>
     @loading = true
@@ -995,6 +1028,15 @@ class App.DomServisDispatchBoard extends App.Controller
     {
       week: 'Неделя'
       filters: 'Фильтры'
+      refreshAction: 'Обновить заявки'
+      accountActionsHint: 'Профиль, разделы и выход'
+      accountActionsArrow: '→'
+      accountMenuEyebrow: 'Рабочее меню'
+      accountMenuTitle: 'Аккаунт и разделы'
+      profileAction: 'Учётная запись'
+      dashboardAction: 'Главная Zammad'
+      logoutAction: 'Выйти'
+      closeAction: 'Закрыть'
       openDetailsHint: 'Касание по карточке откроет все детали.'
     }
 

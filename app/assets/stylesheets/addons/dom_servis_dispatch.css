@@ -65,6 +65,22 @@
   padding: 14px;
 }
 
+.dom-servis-dispatch-board__user-card--action {
+  appearance: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.dom-servis-dispatch-board__user-card--action:hover,
+.dom-servis-dispatch-board__user-card--action:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(116, 168, 255, 0.44);
+  box-shadow: 0 18px 32px rgba(7, 10, 18, 0.24);
+  outline: 0;
+}
+
 .dom-servis-dispatch-board__user-avatar {
   align-items: center;
   background: linear-gradient(135deg, #6678ff, #54c3ff);
@@ -100,6 +116,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dom-servis-dispatch-board__user-shortcut {
+  align-items: center;
+  color: #77b8ff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.dom-servis-dispatch-board__user-shortcut strong {
+  color: #d7ecff;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .dom-servis-dispatch-board__role {
@@ -478,6 +511,99 @@
   border-bottom: 0;
   border-top: 1px solid rgba(83, 92, 113, 0.36);
   margin-top: auto;
+}
+
+.dom-servis-dispatch-mobile-menu {
+  inset: 0;
+  position: fixed;
+  z-index: 48;
+}
+
+.dom-servis-dispatch-mobile-menu__backdrop {
+  background: rgba(6, 10, 18, 0.72);
+  border: 0;
+  inset: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.dom-servis-dispatch-mobile-menu__sheet {
+  background: linear-gradient(180deg, rgba(18, 24, 35, 0.99), rgba(25, 31, 43, 0.99));
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid rgba(92, 106, 132, 0.52);
+  bottom: 0;
+  box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.38);
+  left: 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  position: absolute;
+  right: 0;
+}
+
+.dom-servis-dispatch-mobile-menu__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.dom-servis-dispatch-mobile-menu__eyebrow {
+  color: #7f8dff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-mobile-menu__header h2 {
+  color: #f5f7fc;
+  font-size: 22px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.dom-servis-dispatch-mobile-menu__summary {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(88, 101, 128, 0.42);
+  border-radius: 18px;
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+}
+
+.dom-servis-dispatch-mobile-menu__summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dom-servis-dispatch-mobile-menu__summary-body strong {
+  color: #f5f7fc;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.dom-servis-dispatch-mobile-menu__summary-body span {
+  color: #aeb8c9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dom-servis-dispatch-mobile-menu__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dom-servis-dispatch-mobile-menu__actions .btn {
+  justify-content: center;
+  min-height: 48px;
+  width: 100%;
 }
 
 .dom-servis-dispatch-drawer__headline h2 {

@@ -18,7 +18,7 @@ import { useApplicationStore } from '#shared/stores/application.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 
 import {
-  domServisDispatchDesktopPath,
+  domServisDispatchMobilePath,
   hasDomServisDispatchAccess,
 } from '#mobile/lib/domServisDispatch.ts'
 import LoginCredentialsForm from '../components/LoginCredentialsForm.vue'
@@ -77,7 +77,7 @@ const finishLogin = () => {
   if (typeof redirectUrl === 'string') {
     router.replace(redirectUrl)
   } else if (hasDomServisDispatchAccess(session)) {
-    window.location.href = domServisDispatchDesktopPath
+    router.replace(domServisDispatchMobilePath)
   } else {
     router.replace('/')
   }

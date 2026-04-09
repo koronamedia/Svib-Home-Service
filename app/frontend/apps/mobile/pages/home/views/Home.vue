@@ -11,7 +11,8 @@ import type { MenuItem } from '#mobile/components/CommonSectionMenu/index.ts'
 import CommonTicketCreateLink from '#mobile/components/CommonTicketCreateLink/CommonTicketCreateLink.vue'
 import { useTicketOverviews } from '#mobile/entities/ticket/composables/useTicketOverviews.ts'
 import {
-  domServisDispatchDesktopPath,
+  domServisDispatchLabel,
+  domServisDispatchMobilePath,
   hasDomServisDispatchAccess,
 } from '#mobile/lib/domServisDispatch.ts'
 
@@ -25,9 +26,9 @@ const menu = computed<MenuItem[]>(() => {
   if (hasDomServisDispatchAccess(session)) {
     items.push({
       type: 'link',
-      link: domServisDispatchDesktopPath,
+      link: domServisDispatchMobilePath,
       label: 'Диспетчерская доска',
-      information: 'Дом-Сервис',
+      information: domServisDispatchLabel,
       icon: { name: 'mobile-tasklist', size: 'base' },
       iconBg: 'bg-blue',
     })

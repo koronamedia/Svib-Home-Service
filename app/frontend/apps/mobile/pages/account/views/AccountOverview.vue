@@ -21,6 +21,11 @@ import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSe
 import CommonSectionMenuLink from '#mobile/components/CommonSectionMenu/CommonSectionMenuLink.vue'
 import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
 import { useHeader } from '#mobile/composables/useHeader.ts'
+import {
+  domServisDispatchLabel,
+  domServisDispatchMobilePath,
+  hasDomServisDispatchAccess,
+} from '#mobile/lib/domServisDispatch.ts'
 
 const router = useRouter()
 
@@ -111,6 +116,14 @@ const { forceDesktop } = useForceDesktop()
     </div>
 
     <CommonSectionMenu>
+      <CommonSectionMenuLink
+        v-if="hasDomServisDispatchAccess(session)"
+        :icon="{ name: 'mobile-tasklist', size: 'base' }"
+        icon-bg="bg-blue"
+        :link="domServisDispatchMobilePath"
+      >
+        {{ domServisDispatchLabel }}
+      </CommonSectionMenuLink>
       <CommonSectionMenuLink
         v-if="session.hasPermission('user_preferences.avatar')"
         :icon="{ name: 'person', size: 'base' }"
