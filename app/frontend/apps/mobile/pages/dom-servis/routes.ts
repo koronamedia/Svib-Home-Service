@@ -1,8 +1,16 @@
 // Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
 
-import { domServisDispatchTitle } from '#mobile/lib/domServisDispatch.ts'
+import {
+  domServisDispatchDesktopPath,
+  domServisDispatchTitle,
+} from '#mobile/lib/domServisDispatch.ts'
 
 import type { RouteRecordRaw } from 'vue-router'
+
+const redirectToDesktopDispatch = () => {
+  window.location.assign(domServisDispatchDesktopPath)
+  return false
+}
 
 const route: RouteRecordRaw[] = [
   {
@@ -10,6 +18,7 @@ const route: RouteRecordRaw[] = [
     name: 'DomServisDispatch',
     props: true,
     component: () => import('./views/DomServisDispatch.vue'),
+    beforeEnter: redirectToDesktopDispatch,
     meta: {
       title: domServisDispatchTitle,
       requiresAuth: true,
