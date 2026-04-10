@@ -1,4 +1,111 @@
 <div class="dom-servis-dispatch-board__shell<%= ' is-mobile' if @mobileView %>">
+  <% if @mobileView: %>
+    <section class="dom-servis-dispatch-board__mobile-shell">
+      <div class="dom-servis-dispatch-board__mobile-topbar">
+        <div class="dom-servis-dispatch-board__mobile-brand">
+          <div class="dom-servis-dispatch-board__eyebrow">Дом-Сервис</div>
+          <strong>Dispatch</strong>
+          <span class="dom-servis-dispatch-board__brand-note">Выездная доска мастера</span>
+        </div>
+        <div class="dom-servis-dispatch-board__mobile-topbar-actions">
+          <div class="dom-servis-dispatch-board__mobile-role">
+            <span class="dom-servis-dispatch-board__presence-dot"></span>
+            <%= @roleLabel %>
+          </div>
+          <button type="button" class="dom-servis-dispatch-board__mobile-menu-toggle js-open-mobile-account-menu" aria-label="<%= @mobileLabels.accountMenuTitle %>">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dom-servis-dispatch-board__mobile-stage">
+        <div class="dom-servis-dispatch-board__mobile-stage-copy">
+          <div class="dom-servis-dispatch-board__mobile-stage-eyebrow">Рабочий режим</div>
+          <h1><%= @mobileShell.title %></h1>
+          <p><%= @mobileBoardSummary %></p>
+        </div>
+        <div class="dom-servis-dispatch-board__mobile-workspace-filters">
+          <% for item in @mobileShell.workspaceFilters: %>
+            <button class="btn btn--text js-status-filter<%= ' is-active' if item.active %>" data-filter="<%= item.id %>">
+              <span><%= item.label %></span>
+              <strong><%= item.count %></strong>
+            </button>
+          <% end %>
+        </div>
+      </div>
+
+      <section class="dom-servis-dispatch-board__mobile-week-panel">
+        <div class="dom-servis-dispatch-board__week-head">
+          <div>
+            <div class="dom-servis-dispatch-board__mobile-queue-label">Неделя</div>
+            <strong><%= @weekControls.startShortLabel %> - <%= @weekControls.endShortLabel %></strong>
+          </div>
+          <div class="dom-servis-dispatch-board__week-actions">
+            <button class="dom-servis-dispatch-board__week-button js-week-shift" data-offset="-1" aria-label="Предыдущая неделя">‹</button>
+            <button class="dom-servis-dispatch-board__week-button dom-servis-dispatch-board__week-button--wide js-week-reset<%= ' is-active' if @weekControls.isCurrent %>">Текущая</button>
+            <button class="dom-servis-dispatch-board__week-button js-week-shift" data-offset="1" aria-label="Следующая неделя">›</button>
+          </div>
+        </div>
+
+        <div class="dom-servis-dispatch-board__mobile-day-grid">
+          <button class="dom-servis-dispatch-board__mobile-day-card js-day-filter<%= ' is-active' if @dayFilter is 'all' %>" data-filter="all">
+            <span class="dom-servis-dispatch-board__mobile-day-label">Все</span>
+            <strong class="dom-servis-dispatch-board__mobile-day-count"><%= @dayFilters[0].count %></strong>
+          </button>
+          <% for item in @mobileWeekDays: %>
+            <button class="dom-servis-dispatch-board__mobile-day-card js-day-filter<%= ' is-active' if item.active %><%= ' is-today' if item.isToday %><%= ' has-load' if item.hasLoad %>" data-filter="<%= item.id %>">
+              <span class="dom-servis-dispatch-board__mobile-day-label"><%= item.shortLabel %></span>
+              <strong class="dom-servis-dispatch-board__mobile-day-count"><%= item.count %></strong>
+              <em class="dom-servis-dispatch-board__mobile-day-date"><%= item.dateNumber %></em>
+            </button>
+          <% end %>
+        </div>
+
+        <details class="dom-servis-dispatch-board__mobile-filters"<%= ' open' if @mobileShell.controlsOpen %>>
+          <summary>
+            <span class="dom-servis-dispatch-chip dom-servis-dispatch-chip--primary">Фильтры</span>
+            <% if @tagFilters.length > 0: %>
+              <span class="dom-servis-dispatch-chip dom-servis-dispatch-chip--quiet"><%= @mobileTagSummary %></span>
+            <% end %>
+          </summary>
+          <div class="dom-servis-dispatch-board__mobile-filters-body">
+            <div class="dom-servis-dispatch-board__control-block">
+              <div class="dom-servis-dispatch-board__control-label">Навигация недели</div>
+              <div class="dom-servis-dispatch-board__week-bar">
+                <div class="dom-servis-dispatch-board__week-actions">
+                  <button class="btn btn--text js-week-shift" data-offset="-1">← Прошлая</button>
+                  <button class="btn btn--text js-week-reset<%= ' is-active' if @weekControls.isCurrent %>">Текущая</button>
+                  <button class="btn btn--text js-week-shift" data-offset="1">Следующая →</button>
+                </div>
+                <div class="dom-servis-dispatch-board__week-summary">
+                  <strong><%= @weekControls.startLabel %> - <%= @weekControls.endLabel %></strong>
+                  <input class="form-control js-week-picker" type="date" value="<%= @weekControls.pickerValue %>">
+                </div>
+              </div>
+            </div>
+            <% if @tagFilters.length > 0: %>
+              <div class="dom-servis-dispatch-board__control-block">
+                <div class="dom-servis-dispatch-board__control-label">Теги</div>
+                <div class="dom-servis-dispatch-board__filters dom-servis-dispatch-board__filters--tags">
+                  <% for item in @tagFilters: %>
+                    <button class="btn btn--text js-tag-filter-toggle<%= ' is-active' if item.active %>" data-tag="<%= item.id %>">
+                      <span><%= item.label %></span>
+                      <strong><%= item.count %></strong>
+                    </button>
+                  <% end %>
+                  <% if _.some(@tagFilters, (item) -> item.active): %>
+                    <button class="btn btn--text js-clear-tag-filters">Сбросить</button>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </details>
+      </section>
+    </section>
+  <% end %>
   <div class="dom-servis-dispatch-board__hero">
     <div class="dom-servis-dispatch-board__hero-copy">
       <div class="dom-servis-dispatch-board__eyebrow">Дом-Сервис</div>
@@ -149,35 +256,50 @@
     </div>
   <% else if @jobCards.length is 0: %>
     <div class="dom-servis-dispatch-board__empty">
-      <strong>По текущему срезу заявок нет.</strong>
-      <span>Смени неделю или фильтр, либо создай первую заявку в пул.</span>
+      <strong><%= @emptyState.title %></strong>
+      <span><%= @emptyState.body %></span>
     </div>
   <% else: %>
     <div class="dom-servis-dispatch-board__grid">
       <% for job in @jobCards: %>
         <article class="dom-servis-dispatch-card dom-servis-dispatch-card--<%= job.status %> dom-servis-dispatch-card--<%= job.priority %> js-job-card" data-id="<%= job.id %>">
-          <div class="dom-servis-dispatch-card__topline">
-            <div class="dom-servis-dispatch-card__identity">
-              <span class="dom-servis-dispatch-card__code"><%= job.jobCode %></span>
-              <span class="dom-servis-dispatch-card__day"><%= job.visitDayLabel %></span>
+          <% if @mobileView: %>
+            <div class="dom-servis-dispatch-card__row dom-servis-dispatch-card__row--top">
+              <div class="dom-servis-dispatch-card__schedule"><%= job.scheduleLabel %></div>
+              <span class="dom-servis-dispatch-card__status dom-servis-dispatch-card__status--<%= job.status %>"><%= job.statusLabel %></span>
             </div>
-            <span class="dom-servis-dispatch-card__status dom-servis-dispatch-card__status--<%= job.status %>"><%= job.statusLabel %></span>
-          </div>
+            <div class="dom-servis-dispatch-card__address dom-servis-dispatch-card__address--primary"><%= job.address %></div>
+            <div class="dom-servis-dispatch-card__title dom-servis-dispatch-card__title--secondary"><%= job.serviceType %></div>
+            <div class="dom-servis-dispatch-card__meta dom-servis-dispatch-card__meta--mobile">
+              <span><%= job.clientName %></span>
+              <% if job.clientPhone: %>
+                <span><%= job.clientPhone %></span>
+              <% end %>
+            </div>
+          <% else: %>
+            <div class="dom-servis-dispatch-card__topline">
+              <div class="dom-servis-dispatch-card__identity">
+                <span class="dom-servis-dispatch-card__code"><%= job.jobCode %></span>
+                <span class="dom-servis-dispatch-card__day"><%= job.visitDayLabel %></span>
+              </div>
+              <span class="dom-servis-dispatch-card__status dom-servis-dispatch-card__status--<%= job.status %>"><%= job.statusLabel %></span>
+            </div>
 
-          <div class="dom-servis-dispatch-card__title"><%= job.serviceType %></div>
-          <div class="dom-servis-dispatch-card__address"><%= job.address %></div>
+            <div class="dom-servis-dispatch-card__title"><%= job.serviceType %></div>
+            <div class="dom-servis-dispatch-card__address"><%= job.address %></div>
 
-          <div class="dom-servis-dispatch-card__meta">
-            <span><%= job.scheduleLabel %></span>
-            <span><%= job.assigneeName %></span>
-          </div>
+            <div class="dom-servis-dispatch-card__meta">
+              <span><%= job.scheduleLabel %></span>
+              <span><%= job.assigneeName %></span>
+            </div>
 
-          <div class="dom-servis-dispatch-card__contact">
-            <span><%= job.clientName %></span>
-            <% if job.clientPhone: %>
-              <span><%= job.clientPhone %></span>
-            <% end %>
-          </div>
+            <div class="dom-servis-dispatch-card__contact">
+              <span><%= job.clientName %></span>
+              <% if job.clientPhone: %>
+                <span><%= job.clientPhone %></span>
+              <% end %>
+            </div>
+          <% end %>
 
           <div class="dom-servis-dispatch-card__badge-row">
             <span class="dom-servis-dispatch-card__priority dom-servis-dispatch-card__priority--<%= job.priority %>"><%= job.priorityLabel %></span>
@@ -217,8 +339,21 @@
         <div class="dom-servis-dispatch-drawer__header">
           <div class="dom-servis-dispatch-drawer__headline">
             <div class="dom-servis-dispatch-drawer__code"><%= @detailJob.jobCode %></div>
-            <h2><%= @detailJob.title %></h2>
-            <div class="dom-servis-dispatch-drawer__schedule"><%= @detailJob.scheduleLabel %></div>
+            <% if @mobileView: %>
+              <div class="dom-servis-dispatch-drawer__service-line"><%= @detailJob.serviceType %></div>
+              <h2><%= @detailJob.address %></h2>
+              <div class="dom-servis-dispatch-drawer__schedule"><%= @detailJob.scheduleLabel %></div>
+              <div class="dom-servis-dispatch-drawer__quick-meta">
+                <span><%= @detailJob.clientName %></span>
+                <% if @detailJob.clientPhone: %>
+                  <span><%= @detailJob.clientPhone %></span>
+                <% end %>
+                <span><%= @detailJob.assigneeName %></span>
+              </div>
+            <% else: %>
+              <h2><%= @detailJob.title %></h2>
+              <div class="dom-servis-dispatch-drawer__schedule"><%= @detailJob.scheduleLabel %></div>
+            <% end %>
             <div class="dom-servis-dispatch-drawer__status-row">
               <span class="dom-servis-dispatch-card__status dom-servis-dispatch-card__status--<%= @detailJob.statusClass %>"><%= @detailJob.statusLabel %></span>
               <span class="dom-servis-dispatch-card__priority dom-servis-dispatch-card__priority--<%= @detailJob.priority %>"><%= @detailJob.priorityLabel %></span>
