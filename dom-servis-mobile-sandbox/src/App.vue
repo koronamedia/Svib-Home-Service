@@ -147,6 +147,7 @@ const weekDays = computed(() => {
       shortLabel: formatDayLabel(iso),
       dateNumber: iso.slice(8, 10),
       count,
+      hasLoad: count > 0,
       active: state.day === iso,
       isToday: sameIsoDate(date, today),
     })
@@ -354,20 +355,20 @@ setWorkspace(state.workspace)
                 :class="{ 'is-active': state.day === 'all' }"
                 @click="state.day = 'all'"
               >
-                <span>Все</span>
-                <strong>{{ currentWeekJobs.length }}</strong>
+                <span class="dom-servis-dispatch-day-card__label">Все</span>
+                <strong class="dom-servis-dispatch-day-card__count">{{ currentWeekJobs.length }}</strong>
               </button>
 
               <button
                 v-for="item in weekDays"
                 :key="item.id"
                 class="dom-servis-dispatch-day-card"
-                :class="{ 'is-active': item.active, 'is-today': item.isToday }"
+                :class="{ 'is-active': item.active, 'is-today': item.isToday, 'has-load': item.hasLoad }"
                 @click="state.day = item.id"
               >
-                <span>{{ item.shortLabel }}</span>
-                <strong>{{ item.count }}</strong>
-                <em>{{ item.dateNumber }}</em>
+                <span class="dom-servis-dispatch-day-card__label">{{ item.shortLabel }}</span>
+                <strong class="dom-servis-dispatch-day-card__count">{{ item.count }}</strong>
+                <em class="dom-servis-dispatch-day-card__date">{{ item.dateNumber }}</em>
               </button>
             </div>
 
