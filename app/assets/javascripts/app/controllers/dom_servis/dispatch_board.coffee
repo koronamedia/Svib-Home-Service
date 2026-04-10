@@ -68,6 +68,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @createAttachmentKind = 'intake_attachment'
     @mobileWorkspaceMenuOpen = false
     @initViewportMode()
+    @statusFilter = 'mine' if @mobileView && @masterAccess()
     @bindRouteWatcher()
     @resetCreateDraft()
 
@@ -107,9 +108,14 @@ class App.DomServisDispatchBoard extends App.Controller
       dispatcherAccess: @dispatcherAccess()
       masterAccess: @masterAccess()
       mobileLabels: @mobileLabels()
+      mobileShell: @buildMobileShell()
+      mobileBoardSummary: @buildMobileBoardSummary()
+      mobileWeekDays: @buildMobileWeekDays()
+      mobileTagSummary: @buildMobileTagSummary()
       roleLabel: @roleLabel()
       currentUserCard: @buildCurrentUserCard()
       activeFilterSummary: @buildActiveFilterSummary()
+      emptyState: @buildEmptyState()
       canCreateJob: @canCreatePublishedJob()
       createDraft: @createDraft
       createAttachmentKinds: @createAttachmentKindOptions()
@@ -944,8 +950,10 @@ class App.DomServisDispatchBoard extends App.Controller
       pool: _.filter(weekJobs, (job) -> job.status is 'pool').length
       active: _.filter(weekJobs, (job) -> job.status in ['taken', 'in_progress']).length
       mine: _.filter(weekJobs, (job) -> job.assignee_id is currentUserId).length
+      mineActive: _.filter(weekJobs, (job) -> job.assignee_id is currentUserId && job.status in ['taken', 'in_progress']).length
       done: _.filter(weekJobs, (job) -> job.status is 'done').length
       today: _.filter(weekJobs, (job) => @isToday(job)).length
+      availableToday: _.filter(weekJobs, (job) => job.status is 'pool' && @isToday(job)).length
     }
 
   buildScopedStatusFilters: ->
@@ -969,6 +977,8 @@ class App.DomServisDispatchBoard extends App.Controller
     {
       startLabel: @formatDate(startDate)
       endLabel: @formatDate(endDate)
+      startShortLabel: @formatDayMonth(startDate)
+      endShortLabel: @formatDayMonth(endDate)
       pickerValue: @formatDateValue(startDate)
       isCurrent: @isCurrentWeek(startDate)
     }
@@ -1023,6 +1033,137 @@ class App.DomServisDispatchBoard extends App.Controller
 
     items = items.concat(@activeTagFilters) if @activeTagFilters.length > 0
     items
+
+  buildMobileShell: ->
+    stats = @buildStats()
+    weekControls = @buildWeekControls()
+    statusFilters = @buildScopedStatusFilters()
+    currentStatus = _.find(statusFilters, (item) -> item.active) || statusFilters[0] || {}
+    filteredCount = @filteredJobs().length
+    workspaceFilters = @buildMobileWorkspaceFilters(statusFilters)
+
+    {
+      title: @mobileQueueTitle(currentStatus.id)
+      subtitle: @mobileQueueSubtitle(currentStatus.id)
+      activeStatusLabel: currentStatus.label || 'Заявки'
+      filteredCountLabel: @jobsCountLabel(filteredCount)
+      workspaceFilters: workspaceFilters
+      contextBadges: @buildMobileContextBadges(weekControls, stats)
+      controlsOpen: @mobileControlsOpen(workspaceFilters, currentStatus.id, weekControls)
+      telemetry: [
+        { label: 'Мои в работе', value: stats.mineActive }
+        { label: 'В пуле', value: stats.pool }
+        { label: 'На сегодня', value: stats.today }
+      ]
+    }
+
+  buildMobileWorkspaceFilters: (statusFilters = @buildScopedStatusFilters()) ->
+    preferredIds = if @masterAccess()
+      ['mine', 'pool', 'active', 'done']
+    else
+      ['open', 'mine', 'pool', 'active', 'done', 'all']
+
+    _.chain(statusFilters)
+      .filter((item) -> _.contains(preferredIds, item.id))
+      .sortBy((item) -> preferredIds.indexOf(item.id))
+      .value()
+
+  buildMobileContextBadges: (weekControls = @buildWeekControls(), stats = @buildStats()) ->
+    badges = [
+      {
+        id: 'week'
+        tone: 'week'
+        label: "Неделя: #{weekControls.startLabel} - #{weekControls.endLabel}"
+      }
+    ]
+
+    activeSummary = @buildActiveFilterSummary()
+    if activeSummary.length > 0
+      badges.push(
+        id: 'filters'
+        tone: 'filters'
+        label: activeSummary.join(' / ')
+      )
+
+    if @statusFilter is 'pool' && stats.availableToday > 0
+      badges.push(
+        id: 'today'
+        tone: 'today'
+        label: "Сегодня в пуле: #{stats.availableToday}"
+      )
+
+    badges
+
+  mobileControlsOpen: (workspaceFilters = @buildMobileWorkspaceFilters(), activeStatusId = @statusFilter, weekControls = @buildWeekControls()) ->
+    preferredIds = _.pluck(workspaceFilters, 'id')
+    return true if !_.contains(preferredIds, activeStatusId)
+    return true if @dayFilter isnt 'all'
+    return true if @activeTagFilters.length > 0
+    !weekControls.isCurrent
+
+  mobileQueueTitle: (statusId) ->
+    switch statusId
+      when 'mine' then 'Мои заявки'
+      when 'pool' then 'Заявки из пула'
+      when 'active' then 'Текущая работа'
+      when 'done' then 'Завершённые заявки'
+      when 'all' then 'Все заявки недели'
+      else 'Рабочая доска'
+
+  mobileQueueSubtitle: (statusId) ->
+    switch statusId
+      when 'mine' then 'Сразу видно, что уже на тебе и что нужно довести до конца.'
+      when 'pool' then 'Здесь берут свободные заявки без перехода в ticket-first сценарий.'
+      when 'active' then 'Фокус только на заявках, которые сейчас требуют действия.'
+      when 'done' then 'Проверка того, что уже закрыто и больше не отвлекает.'
+      else 'Мобильный shell собран вокруг работы мастера, а не вокруг оболочки системы.'
+
+  jobsCountLabel: (count) ->
+    return 'Нет заявок' if count < 1
+    return '1 заявка' if count is 1
+    return "#{count} заявки" if count in [2, 3, 4]
+    "#{count} заявок"
+
+  buildMobileBoardSummary: ->
+    stats = @buildStats()
+    "#{stats.mineActive} в работе • #{stats.pool} в пуле"
+
+  buildMobileWeekDays: ->
+    _.map @weekdayItems(), (item) =>
+      date = @dateForDayInWeek(item.id)
+      count = _.filter(@jobsForStatusFilter(), (job) => @jobVisitDay(job) is item.id).length
+      {
+        id: item.id
+        label: item.label
+        shortLabel: item.shortLabel
+        count: count
+        active: item.id is @dayFilter
+        hasLoad: count > 0
+        isToday: @isTodayDate(date)
+        dateNumber: @dayOfMonth(date)
+      }
+
+  buildMobileTagSummary: ->
+    return 'Все теги' if @activeTagFilters.length < 1
+    @activeTagFilters.join(' / ')
+
+  buildEmptyState: ->
+    if @masterAccess() && @statusFilter is 'mine'
+      return {
+        title: 'У вас нет активных заявок.'
+        body: 'Переключитесь на пул или измените день, чтобы взять следующую заявку.'
+      }
+
+    if @statusFilter is 'pool'
+      return {
+        title: 'В пуле сейчас нет доступных заявок.'
+        body: 'Смените неделю или день, чтобы проверить другой срез.'
+      }
+
+    {
+      title: 'По текущему срезу заявок нет.'
+      body: 'Смените неделю или фильтр, либо создайте первую заявку в пул.'
+    }
 
   mobileLabels: ->
     {
@@ -1129,6 +1270,11 @@ class App.DomServisDispatchBoard extends App.Controller
       id: job.id
       jobCode: job.job_code || @fallbackJobCode(job)
       title: job.service_type || 'Без названия'
+      serviceType: job.service_type || 'Без названия'
+      address: job.address || 'Адрес не указан'
+      clientName: job.client_name || 'Клиент не указан'
+      clientPhone: job.client_phone || ''
+      organizationName: @resolveOrganizationName(job)
       status: job.status || 'pool'
       statusLabel: @statusLabel(job.status)
       statusClass: job.status || 'pool'
@@ -2025,6 +2171,16 @@ class App.DomServisDispatchBoard extends App.Controller
     month = ("0#{date.getMonth() + 1}").slice(-2)
     "#{day}.#{month}.#{date.getFullYear()}"
 
+  formatDayMonth: (dateValue) ->
+    date = @parseDateValue(dateValue) || new Date()
+    day = ("0#{date.getDate()}").slice(-2)
+    month = ("0#{date.getMonth() + 1}").slice(-2)
+    "#{day}.#{month}"
+
+  dayOfMonth: (dateValue) ->
+    date = @parseDateValue(dateValue) || new Date()
+    ("0#{date.getDate()}").slice(-2)
+
   dateForDayInWeek: (dayKey) ->
     startDate = @selectedWeekStartDate()
     index = _.findIndex(@weekdayItems(), (item) -> item.id is dayKey)
@@ -2038,6 +2194,10 @@ class App.DomServisDispatchBoard extends App.Controller
     visitDate = @jobVisitDate(job)
     return false if !visitDate
     @formatDateValue(visitDate) is @formatDateValue(new Date())
+
+  isTodayDate: (dateValue) ->
+    return false if !dateValue
+    @formatDateValue(dateValue) is @formatDateValue(new Date())
 
   parseTags: (value) ->
     return [] if !value
