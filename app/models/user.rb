@@ -56,6 +56,7 @@ class User < ApplicationModel
   before_update     :validate_preferences, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
+  before_create     :ensure_dom_servis_ticket_group_access
   after_commit      :bootstrap_dom_servis_roles, on: :create
 
   validate :ensure_identifier, :ensure_email
@@ -1142,6 +1143,16 @@ raise 'At least one user need to have admin permissions'
     return if !admin_overlay_role || role?('Dom-Servis Admin')
 
     roles << admin_overlay_role
+  end
+
+  def ensure_dom_servis_ticket_group_access
+    return if !permissions?('ticket.agent')
+    return if group_ids_access('create').present?
+
+    ticket_group = Group.find_by(name: 'Users') || Group.find_by(id: 1)
+    return if !ticket_group
+
+    self.group_ids_access_map = { ticket_group.id => 'full' }
   end
 
   def update_caller_id

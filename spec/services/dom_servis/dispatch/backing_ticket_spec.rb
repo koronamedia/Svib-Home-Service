@@ -56,6 +56,41 @@ RSpec.describe 'Dom-Servis backing ticket bridge' do
     expect(ticket.articles.last.body).to include('Call before arrival')
   end
 
+  it 'falls back to an operator-accessible group when the configured backing group is unavailable' do
+    accessible_group = create(:group, name: '001 Accessible Group')
+    blocked_group    = create(:group, name: '999 Blocked Group')
+    operator         = create(:agent, groups: [accessible_group])
+
+    previous_group_setting = Setting.get('dom_servis_dispatch_backing_ticket_group_id')
+    Setting.set('dom_servis_dispatch_backing_ticket_group_id', blocked_group.id, validate: false)
+
+    fallback_job = DomServis::DispatchJob.create!(
+      service_type: 'Washing machine repair',
+      address:      'Moskovskaya 15',
+      client_name:  'Olga Ivanova',
+      client_phone: '+79002223344',
+      visit_day:    'wed',
+      visit_date:   '2026-03-25',
+      priority:     'medium',
+      organization: organization,
+      work_tags:    %w[boiler],
+      description:  'Needs a ticket in an accessible group.',
+      status:       'pool',
+      created_by:   operator,
+      updated_by:   operator,
+    )
+
+    ticket = DomServis::Dispatch::BackingTicket::Create
+      .new(dispatch_job: fallback_job, operator:)
+      .execute
+
+    expect(ticket).to be_persisted
+    expect(ticket.group_id).to eq(accessible_group.id)
+    expect(fallback_job.reload.ticket_id).to eq(ticket.id)
+  ensure
+    Setting.set('dom_servis_dispatch_backing_ticket_group_id', previous_group_setting, validate: false)
+  end
+
   it 'syncs key dispatch changes into the existing backing ticket and appends an internal note' do
     ticket = DomServis::Dispatch::BackingTicket::Create
       .new(dispatch_job:, operator: dispatcher)

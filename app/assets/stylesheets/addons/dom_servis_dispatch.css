@@ -1313,6 +1313,9 @@
   border: 1px solid rgba(93, 103, 126, 0.76);
   border-radius: 22px;
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 84px);
   margin: 42px auto;
   position: relative;
   width: min(780px, calc(100vw - 40px));
@@ -1343,6 +1346,10 @@
 }
 
 .dom-servis-dispatch-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 22px;
 }
 
@@ -1537,6 +1544,8 @@
   }
 
   .dom-servis-dispatch-modal__dialog {
+    max-height: calc(100vh - 20px);
+    margin: 10px auto;
     width: calc(100vw - 20px);
   }
 

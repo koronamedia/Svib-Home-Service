@@ -19,7 +19,14 @@ class DomServis::Dispatch::BackingTicket::Resolver
 
   def group
     @group ||= begin
-      configured_group || operator_group || assignee_group || active_groups.first || raise('No active ticket group available for Dom-Servis backing tickets.')
+      candidate_groups = [
+        configured_group,
+        operator_group,
+        assignee_group,
+        *accessible_active_groups,
+      ].compact.uniq
+
+      candidate_groups.find { |group| accessible_group?(group) } || raise('No accessible ticket group available for Dom-Servis backing tickets.')
     end
   end
 
@@ -87,7 +94,7 @@ class DomServis::Dispatch::BackingTicket::Resolver
   def operator_group
     return if operator.blank?
 
-    active_groups.detect do |group|
+    accessible_active_groups.detect do |group|
       operator.group_access?(group.id, 'create') || operator.group_access?(group.id, 'change') || operator.group_access?(group.id, 'full')
     end
   end
@@ -95,7 +102,7 @@ class DomServis::Dispatch::BackingTicket::Resolver
   def assignee_group
     return if dispatch_job.assignee.blank?
 
-    active_groups.detect { |group| dispatch_job.assignee.group_access?(group.id, 'full') }
+    accessible_active_groups.detect { |group| dispatch_job.assignee.group_access?(group.id, 'full') }
   end
 
   def state_for_type(type_name)
@@ -108,5 +115,18 @@ class DomServis::Dispatch::BackingTicket::Resolver
 
   def active_groups
     @active_groups ||= Group.where(active: true).sorted.to_a
+  end
+
+  def accessible_active_groups
+    return active_groups if operator.blank?
+
+    @accessible_active_groups ||= active_groups.select { |group| accessible_group?(group) }
+  end
+
+  def accessible_group?(group)
+    return false if group.blank?
+    return true if operator.blank?
+
+    operator.group_access?(group.id, 'create') || operator.group_access?(group.id, 'change') || operator.group_access?(group.id, 'full')
   end
 end
