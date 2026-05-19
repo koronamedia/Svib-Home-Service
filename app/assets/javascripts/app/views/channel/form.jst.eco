@@ -22,6 +22,29 @@
     </fieldset>
   </form>
 
+  <h2><%- @T('Dom-Servis intake') %></h2>
+  <form class="js-domServisIntakeSettings">
+    <fieldset>
+      <div class="input form-group formGroup--halfSize js-domServisIntakeSetting">
+        <div class="formGroup-label">
+          <label for="dom-servis-intake-enabled"><%- @T('Promote form tickets to dispatch jobs') %></label>
+        </div>
+        <div class="controls">
+          <div class="zammad-switch zammad-switch--small">
+             <input name="dom_servis_form_intake_enabled" type="checkbox" id="dom-servis-intake-enabled" <% if @domServisIntakeSetting: %>checked<% end %>>
+             <label for="dom-servis-intake-enabled"></label>
+          </div>
+        </div>
+      </div>
+      <div class="input form-group formGroup--halfSize hide js-domServisIntakeOrganizationGroup">
+        <div class="formGroup-label">
+          <label for="dom-servis-intake-organization"><%- @T('Partner organization') %></label>
+        </div>
+        <div class="controls js-domServisIntakeOrganizationSelector" id="dom-servis-intake-organization"></div>
+      </div>
+    </fieldset>
+  </form>
+
   <h2><%- @T('Designer') %></h2>
   <form class="js-paramsDesigner">
 

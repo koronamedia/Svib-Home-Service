@@ -7,7 +7,7 @@ class DomServis::DispatchJob < ApplicationModel
 
   STATUSES   = %w[pool taken in_progress done cancelled].freeze
   PRIORITIES = %w[low medium high critical].freeze
-  SOURCES    = %w[manual ai].freeze
+  SOURCES    = %w[manual form email webhook ai].freeze
   VISIT_DAYS = %w[mon tue wed thu fri sat sun].freeze
   ATTACHMENT_KINDS = %w[intake_attachment route_info completion_act diagnostic_photo other].freeze
 
@@ -45,6 +45,7 @@ class DomServis::DispatchJob < ApplicationModel
   before_validation :apply_defaults
   before_validation :assign_job_code
   before_validation :normalize_work_tags
+  before_validation :normalize_intake_metadata
   before_validation :sync_lifecycle_timestamps
 
   scope :ordered_recent, -> { order(created_at: :desc, id: :desc) }
@@ -110,6 +111,12 @@ class DomServis::DispatchJob < ApplicationModel
       normalized = value.to_s.strip
       normalized.presence
     end.uniq.first(10)
+  end
+
+  def normalize_intake_metadata
+    self.source_reference = source_reference.presence
+    self.intake_channel_key = intake_channel_key.presence
+    self.intake_payload = intake_payload.presence || {}
   end
 
   def sync_lifecycle_timestamps

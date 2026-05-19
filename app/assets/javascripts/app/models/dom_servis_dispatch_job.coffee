@@ -12,7 +12,7 @@ class App.DomServisDispatchJob extends App.Model
     { name: 'visit_time', display: __('Visit time'), tag: 'input', type: 'text', limit: 50, null: true }
     { name: 'priority', display: __('Priority'), tag: 'select', null: false, translate: false, options: { low: 'low', medium: 'medium', high: 'high', critical: 'critical' }, default: 'medium' }
     { name: 'status', display: __('Status'), tag: 'select', null: false, translate: false, options: { pool: 'pool', taken: 'taken', in_progress: 'in_progress', done: 'done', cancelled: 'cancelled' }, default: 'pool' }
-    { name: 'source', display: __('Source'), tag: 'select', null: false, translate: false, options: { manual: 'manual', ai: 'ai' }, default: 'manual' }
+    { name: 'source', display: __('Source'), tag: 'select', null: false, translate: false, options: { manual: 'manual', form: 'form', email: 'email', webhook: 'webhook', ai: 'ai' }, default: 'manual' }
     { name: 'assignee_id', display: __('Assignee'), tag: 'select', multiple: false, null: true, relation: 'User' }
     { name: 'organization_id', display: __('Organization'), tag: 'select', multiple: false, null: true, relation: 'Organization' }
     { name: 'description', display: __('Description'), tag: 'textarea', rows: 5, limit: 5000, null: true }

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Дом-Сервис | Заявка партнёра</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171b22;
+      --panel-2: #1d232d;
+      --text: #f1f5f9;
+      --muted: #9aa4b2;
+      --border: #2a3240;
+      --accent: #57b7ff;
+      --accent-strong: #1f8fe6;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(87, 183, 255, 0.14), transparent 34%),
+        radial-gradient(circle at top right, rgba(31, 143, 230, 0.12), transparent 28%),
+        linear-gradient(180deg, #0c0f14 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: min(940px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    .hero {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 28px 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 68ch;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .meta-item {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .panel-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    #dom-servis-partner-form {
+      padding: 6px 0 0;
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Dom-Service partner intake</p>
+      <h1>Заявка с сайта партнёра</h1>
+      <p class="lead">
+        Это внешний партнерский embed. Он отправляет заявку в Zammad form intake,
+        а дальше наш bridge промоутит её в <code>DispatchJob</code>.
+        Partner organization задаётся на стороне канала, а не в HTML.
+      </p>
+
+      <div class="meta">
+        <div class="meta-item">
+          <strong>Channel binding</strong>
+          Организация задаётся в настройках канала на стороне Dom-Servis.
+        </div>
+        <div class="meta-item">
+          <strong>Operational source of truth</strong>
+          После intake заявка живёт как <code>DispatchJob</code>.
+        </div>
+        <div class="meta-item">
+          <strong>Do not send</strong>
+          Не добавляй <code>organization_id</code> в payload формы.
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Форма заявки</h2>
+          <p class="panel-note">Можно вставлять этот блок в сайт партнёра как готовый шаблон.</p>
+        </div>
+      </div>
+
+      <div id="dom-servis-partner-form"></div>
+
+      <p class="footnote">
+        Если партнёру нужен отдельный контактный человек, можно включить
+        <code>dom_servis_client_name</code> как дополнительное поле.
+        В этом шаблоне основное имя клиента передаётся через стандартное поле <code>name</code>.
+      </p>
+    </section>
+  </main>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script id="zammad_form_script" src="https://master.svib-dom-service.ru/assets/form/form.js"></script>
+
+  <script>
+    $(function() {
+      $('#dom-servis-partner-form').ZammadForm({
+        lang: 'ru',
+        modal: false,
+        showTitle: true,
+        noCSS: false,
+        attachmentSupport: true,
+        messageTitle: 'Заявка с сайта партнёра',
+        messageSubmit: 'Отправить заявку',
+        messageThankYou: 'Спасибо. Заявка принята. Номер обращения #%s.',
+        attributes: [
+          {
+            display: 'Имя',
+            name: 'name',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-name',
+            required: true,
+            placeholder: 'Иван Иванов',
+            defaultValue: '',
+          },
+          {
+            display: 'E-mail',
+            name: 'email',
+            tag: 'input',
+            type: 'email',
+            id: 'dom-servis-partner-email',
+            required: true,
+            placeholder: 'name@example.com',
+            defaultValue: '',
+          },
+          {
+            display: 'Телефон',
+            name: 'dom_servis_client_phone',
+            tag: 'input',
+            type: 'tel',
+            id: 'dom-servis-partner-phone',
+            placeholder: '+7 999 123-45-67',
+            defaultValue: '',
+          },
+          {
+            display: 'Адрес объекта',
+            name: 'dom_servis_address',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-address',
+            placeholder: 'Новосибирск, ул. Ленина, 10',
+            defaultValue: '',
+          },
+          {
+            display: 'Тип услуги',
+            name: 'dom_servis_service_type',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-service-type',
+            placeholder: 'Сантехника, электрика, бойлер и т.д.',
+            defaultValue: '',
+          },
+          {
+            display: 'Желаемый день',
+            name: 'dom_servis_visit_day',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-visit-day',
+            placeholder: 'понедельник',
+            defaultValue: '',
+          },
+          {
+            display: 'Желаемая дата',
+            name: 'dom_servis_visit_date',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-visit-date',
+            placeholder: '2026-05-19',
+            defaultValue: '',
+          },
+          {
+            display: 'Желаемое время',
+            name: 'dom_servis_visit_time',
+            tag: 'input',
+            type: 'text',
+            id: 'dom-servis-partner-visit-time',
+            placeholder: '10:00-12:00',
+            defaultValue: '',
+          },
+          {
+            display: 'Комментарий',
+            name: 'dom_servis_comment',
+            tag: 'textarea',
+            id: 'dom-servis-partner-comment',
+            placeholder: 'Дополнительные комментарии',
+            defaultValue: '',
+            rows: 4,
+          },
+          {
+            display: 'Описание проблемы',
+            name: 'body',
+            tag: 'textarea',
+            id: 'dom-servis-partner-body',
+            required: true,
+            placeholder: 'Что случилось и что нужно сделать',
+            defaultValue: '',
+            rows: 6,
+          },
+          {
+            display: 'Вложения',
+            name: 'file[]',
+            tag: 'input',
+            type: 'file',
+            id: 'dom-servis-partner-files',
+            repeat: 3,
+          },
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

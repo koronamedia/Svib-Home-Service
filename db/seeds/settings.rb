@@ -3097,6 +3097,56 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
+  title:       __('Enable Dom-Servis intake bridge'),
+  name:        'dom_servis_form_intake_enabled',
+  area:        'Form::Base',
+  description: __('Defines if web form tickets should be promoted to Dom-Servis dispatch jobs.'),
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'dom_servis_form_intake_enabled',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  state:       false,
+  preferences: {
+    permission: ['admin.channel_formular'],
+  },
+  frontend:    false,
+)
+
+Setting.create_if_not_exists(
+  title:       __('Dom-Servis partner organization'),
+  name:        'dom_servis_form_organization_id',
+  area:        'Form::Base',
+  description: __('Defines which partner organization owns tickets promoted from the web form.'),
+  options:     {
+    form: [
+      {
+        display:  '',
+        null:     true,
+        name:     'dom_servis_form_organization_id',
+        tag:      'tree_select',
+        multiple: false,
+        relation: 'Organization',
+      },
+    ],
+  },
+  state:       nil,
+  preferences: {
+    permission: ['admin.channel_formular'],
+  },
+  frontend:    false,
+)
+
+Setting.create_if_not_exists(
   title:       __('Limit tickets by IP per hour'),
   name:        'form_ticket_create_by_ip_per_hour',
   area:        'Form::Base',

@@ -7,11 +7,16 @@ class ChannelForm extends App.ControllerSubContent
     'keyup form.js-paramsDesigner': 'updateParamsDesigner'
     'change .js-formSetting input': 'toggleFormSetting'
     'change .js-paramsSetting input': 'updateGroup'
+    'change .js-domServisIntakeSetting input': 'toggleDomServisIntake'
+    'change .js-domServisIntakeSettings input': 'updateDomServisIntakeOrganization'
 
   elements:
     '.js-code': 'code'
     '.js-paramsSetting': 'paramsSetting'
     '.js-formSetting input': 'formSetting'
+    '.js-domServisIntakeSetting input': 'domServisIntakeSetting'
+    '.js-domServisIntakeSettings': 'domServisIntakeSettings'
+    '.js-domServisIntakeOrganizationGroup': 'domServisIntakeOrganizationGroup'
 
   constructor: ->
     super
@@ -24,10 +29,12 @@ class ChannelForm extends App.ControllerSubContent
 
   render: =>
     setting = App.Setting.get('form_ticket_create')
+    domServisIntakeSetting = App.Setting.get('dom_servis_form_intake_enabled')
 
     element = $(App.view('channel/form')(
       baseurl: window.location.origin
       formSetting: setting
+      domServisIntakeSetting: domServisIntakeSetting
     ))
 
     group_id = App.Setting.get('form_ticket_create_group_id')
@@ -40,6 +47,14 @@ class ChannelForm extends App.ControllerSubContent
       value: group_id
       #class: 'form-control--small'
     )
+    domServisOrganizationSelection = App.UiElement.tree_select.render(
+      name: 'dom_servis_form_organization_id'
+      multiple: false
+      null: true
+      relation: 'Organization'
+      nulloption: true
+      value: App.Setting.get('dom_servis_form_organization_id')
+    )
     agreementTextInput = App.UiElement.richtext.render(
       name: "agreementMessage"
       buttons: [ 'link']
@@ -50,6 +65,7 @@ class ChannelForm extends App.ControllerSubContent
       value: __('Accept Data Privacy Policy & Acceptable Use Policy')
     )
     element.find('.js-groupSelector').html(selection)
+    element.find('.js-domServisIntakeOrganizationSelector').html(domServisOrganizationSelection)
     element.find('.agreement-support-text').html(agreementTextInput)
 
     @html element
@@ -58,6 +74,7 @@ class ChannelForm extends App.ControllerSubContent
       hljs.highlightBlock block
 
     @updateParamsDesigner()
+    @toggleDomServisIntakeVisibility()
 
   updateParamsDesigner: ->
     quote = (string) ->
@@ -108,5 +125,20 @@ class ChannelForm extends App.ControllerSubContent
   updateGroup: =>
     value = @paramsSetting.find('[name=group_id]').val()
     App.Setting.set('form_ticket_create_group_id', value)
+
+  toggleDomServisIntake: =>
+    value = @domServisIntakeSetting.prop('checked')
+    App.Setting.set('dom_servis_form_intake_enabled', value)
+    @toggleDomServisIntakeVisibility()
+
+  updateDomServisIntakeOrganization: =>
+    value = @domServisIntakeSettings.find('[name=dom_servis_form_organization_id]').val()
+    App.Setting.set('dom_servis_form_organization_id', value)
+
+  toggleDomServisIntakeVisibility: =>
+    if @domServisIntakeSetting?.prop('checked')
+      @domServisIntakeOrganizationGroup.removeClass('hide')
+    else
+      @domServisIntakeOrganizationGroup.addClass('hide')
 
 App.Config.set('Form', { prio: 2000, name: __('Form'), parent: '#channels', target: '#channels/form', controller: ChannelForm, permission: ['admin.channel_formular'] }, 'NavBarAdmin')

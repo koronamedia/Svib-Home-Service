@@ -2309,6 +2309,40 @@ class App.DomServisDispatchBoard extends App.Controller
   extractError: (xhr, fallback) ->
     xhr?.responseJSON?.error_human || xhr?.responseJSON?.error || fallback
 
+  fieldOptions: (fieldKey) ->
+    switch fieldKey
+      when 'priority'
+        [
+          { id: 'low', label: 'Низкий' }
+          { id: 'medium', label: 'Средний' }
+          { id: 'high', label: 'Высокий' }
+          { id: 'critical', label: 'Критичный' }
+        ]
+      when 'visit_day'
+        _.map @weekdayItems(), (item) -> { id: item.id, label: item.shortLabel }
+      when 'source'
+        [
+          { id: 'manual', label: 'Вручную' }
+          { id: 'form', label: 'Форма Zammad' }
+          { id: 'email', label: 'Email' }
+          { id: 'webhook', label: 'Webhook / API' }
+          { id: 'ai', label: 'AI / разбор' }
+        ]
+      when 'assignee_id'
+        [{ id: '', label: 'Не назначен' }].concat(@assigneeOptions())
+      when 'organization_id'
+        @organizationOptions()
+      else
+        []
+
+  sourceLabel: (source) ->
+    switch source
+      when 'form' then 'Форма Zammad'
+      when 'email' then 'Email'
+      when 'webhook' then 'Webhook / API'
+      when 'ai' then 'AI / разбор'
+      else 'Вручную'
+
 class DomServisDispatchBoardRouter extends App.ControllerPermanent
   @requiredPermission: ['dom_servis.admin', 'dom_servis.dispatcher', 'dom_servis.master']
 

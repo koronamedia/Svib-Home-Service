@@ -39,15 +39,17 @@ class FormController < ApplicationController
       return
     end
 
-    customer = fetch_customer
+    ticket = Transaction.execute do
+      customer = fetch_customer
 
-    ticket = UserInfo.with_user_id(customer.id) do
-      if Setting.get('form_allowed_params').blank?
-        ApplicationHandleInfo.in_context('form') do
-          create_ticket(customer)
+      UserInfo.with_user_id(customer.id) do
+        if Setting.get('form_allowed_params').blank?
+          ApplicationHandleInfo.in_context('form') do
+            create_ticket_with_optional_dom_servis_intake(customer)
+          end
+        else
+          create_ticket_with_optional_dom_servis_intake(customer)
         end
-      else
-        create_ticket(customer)
       end
     end
 
@@ -58,6 +60,8 @@ class FormController < ApplicationController
       }
     }
     render json: result, status: :ok
+  rescue Exceptions::UnprocessableEntity => e
+    render json: { errors: { base: e.message } }, status: :ok
   end
 
   private
@@ -204,6 +208,40 @@ class FormController < ApplicationController
     end
 
     ticket
+  end
+
+  def create_ticket_with_optional_dom_servis_intake(customer)
+    ticket = create_ticket(customer)
+    promote_dom_servis_intake!(ticket) if dom_servis_intake_enabled?
+    ticket
+  end
+
+  def promote_dom_servis_intake!(ticket)
+    payload = DomServis::Intake::TicketAdapter.new(
+      ticket:         ticket,
+      organization_id: dom_servis_intake_organization.id,
+      source:         'form',
+      channel_key:    'zammad_form',
+      source_reference: ticket.number,
+    ).payload
+
+    DomServis::Intake::DispatchJobCreator.new(
+      payload:    payload,
+      ticket:     ticket,
+    ).execute
+  end
+
+  def dom_servis_intake_enabled?
+    Setting.get('dom_servis_form_intake_enabled') == true
+  end
+
+  def dom_servis_intake_organization
+    @dom_servis_intake_organization ||= begin
+      organization_id = Setting.get('dom_servis_form_organization_id').presence
+      raise Exceptions::UnprocessableEntity, 'Dom-Servis form intake is enabled but no partner organization is configured.' if organization_id.blank?
+
+      Organization.find_by(id: organization_id) || raise(Exceptions::UnprocessableEntity, 'Dom-Servis form intake is enabled but the configured partner organization was not found.')
+    end
   end
 
   def ticket_attributes
