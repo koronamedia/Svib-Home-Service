@@ -183,12 +183,17 @@
 
   <script>
     $(function() {
+      const requestSourceToken = new URLSearchParams(window.location.search).get('request_source_token') || '';
+      const requestSourceOrigin = document.referrer || window.location.origin;
+
       $('#dom-servis-partner-form').ZammadForm({
         lang: 'ru',
         modal: false,
         showTitle: true,
         noCSS: false,
         attachmentSupport: true,
+        request_source_token: requestSourceToken,
+        request_source_origin: requestSourceOrigin,
         messageTitle: 'Заявка с сайта партнёра',
         messageSubmit: 'Отправить заявку',
         messageThankYou: 'Спасибо. Заявка принята. Номер обращения #%s.',

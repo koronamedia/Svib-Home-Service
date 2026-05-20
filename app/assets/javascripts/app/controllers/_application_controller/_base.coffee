@@ -135,7 +135,11 @@ class App.Controller extends Spine.Controller
     e.preventDefault()
 
     controls = $(e.target).parents('.controls')
-    input    = controls.find('input[readonly]')
+    targetField = $(e.target).data('target-field')
+    input = if targetField
+      controls.find("[name='#{targetField}'], ##{targetField}").first()
+    else
+      controls.find('input[readonly], textarea[readonly]').first()
     value    = input.val()
 
     @copyToClipboardWithTooltip(value, e.target, controls, true)

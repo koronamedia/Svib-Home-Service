@@ -16,12 +16,22 @@ class FormController < ApplicationController
     fqdn      = Setting.get('fqdn')
 
     endpoint = "#{http_type}://#{fqdn}#{api_path}/form_submit"
+    request_source = dom_servis_request_source
 
     result = {
       enabled:  Setting.get('form_ticket_create'),
       endpoint: endpoint,
       token:    token_gen(params[:fingerprint])
     }
+
+    result[:enabled] = false if request_source&.paused?
+    result[:request_source] = {
+      id:             request_source.id,
+      partner_key:     request_source.partner_key,
+      name:            request_source.name,
+      organization_id: request_source.organization_id,
+      transport_kind:   request_source.transport_kind,
+    } if request_source.present?
 
     if authorized?(policy_record, :test?)
       result[:enabled] = true
@@ -212,36 +222,32 @@ class FormController < ApplicationController
 
   def create_ticket_with_optional_dom_servis_intake(customer)
     ticket = create_ticket(customer)
-    promote_dom_servis_intake!(ticket) if dom_servis_intake_enabled?
+    promote_dom_servis_intake!(ticket) if dom_servis_request_source.present?
     ticket
   end
 
   def promote_dom_servis_intake!(ticket)
+    request_source = dom_servis_request_source
     payload = DomServis::Intake::TicketAdapter.new(
-      ticket:         ticket,
-      organization_id: dom_servis_intake_organization.id,
-      source:         'form',
-      channel_key:    'zammad_form',
+      ticket:          ticket,
+      request_source:  request_source,
+      source:          'form',
+      channel_key:     request_source.transport_kind,
       source_reference: ticket.number,
+      request_source_origin: params[:request_source_origin].presence,
     ).payload
 
     DomServis::Intake::DispatchJobCreator.new(
-      payload:    payload,
-      ticket:     ticket,
+      payload: payload,
+      ticket:  ticket,
     ).execute
   end
 
-  def dom_servis_intake_enabled?
-    Setting.get('dom_servis_form_intake_enabled') == true
-  end
-
-  def dom_servis_intake_organization
-    @dom_servis_intake_organization ||= begin
-      organization_id = Setting.get('dom_servis_form_organization_id').presence
-      raise Exceptions::UnprocessableEntity, 'Dom-Servis form intake is enabled but no partner organization is configured.' if organization_id.blank?
-
-      Organization.find_by(id: organization_id) || raise(Exceptions::UnprocessableEntity, 'Dom-Servis form intake is enabled but the configured partner organization was not found.')
-    end
+  def dom_servis_request_source
+    @dom_servis_request_source ||= DomServis::RequestSource.resolve_form_source(
+      request_source_token: params[:request_source_token].presence,
+      request:              request,
+    )
   end
 
   def ticket_attributes

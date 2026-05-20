@@ -1,0 +1,353 @@
+# Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
+
+class DomServis::RequestSource < ApplicationModel
+  include CanSelector
+  include HasDefaultModelUserRelations
+  include CanSearch
+
+  self.table_name = 'dom_servis_request_sources'
+
+  TRANSPORT_KINDS = %w[zammad_form webhook ai].freeze
+  STATUSES = %w[active paused].freeze
+  LEGACY_FORM_PARTNER_KEY = 'legacy-zammad-form'.freeze
+
+  belongs_to :organization, optional: true
+  has_many :dispatch_jobs, class_name: 'DomServis::DispatchJob', foreign_key: :request_source_id, inverse_of: :request_source
+
+  attr_accessor :rotate_embed_token
+
+  validates :name, presence: true
+  validates :partner_key, presence: true, uniqueness: { case_sensitive: false }
+  validates :embed_token, presence: true, uniqueness: true
+  validates :transport_kind, presence: true, inclusion: { in: TRANSPORT_KINDS }
+  validates :status, presence: true, inclusion: { in: STATUSES }
+  validates :organization, presence: true, if: :active?
+
+  before_validation :normalize_partner_key
+  before_validation :normalize_transport_kind
+  before_validation :normalize_status
+  before_validation :normalize_allowed_domains
+  before_validation :ensure_embed_token
+  before_validation :stamp_token_rotation
+
+  def active?
+    status == 'active'
+  end
+
+  def paused?
+    !active?
+  end
+
+  def legacy_form?
+    partner_key == LEGACY_FORM_PARTNER_KEY
+  end
+
+  def display_name
+    organization_name = organization&.name.presence
+    organization_name.present? ? "#{name} (#{organization_name})" : name
+  end
+
+  def allowed_domains=(value)
+    super(normalize_domains(value))
+  end
+
+  def embed_url
+    "#{base_origin}/assets/form/dom-servis-partner-embed.html?request_source_token=#{CGI.escape(embed_token)}"
+  end
+
+  def embed_snippet
+    <<~HTML.strip
+      <iframe
+        src="#{ERB::Util.html_escape(embed_url)}"
+        title="#{ERB::Util.html_escape(display_name)}"
+        loading="lazy"
+        style="width: 100%; min-height: 980px; border: 0; overflow: hidden;"
+      ></iframe>
+    HTML
+  end
+
+  def embed_js_snippet
+    <<~HTML.strip
+      <div id="dom-servis-partner-form"></div>
+      <script src="#{base_origin}/assets/form/form.js"></script>
+      <script>
+        $(function() {
+          $('#dom-servis-partner-form').ZammadForm({
+            lang: 'ru',
+            modal: false,
+            showTitle: true,
+            attachmentSupport: true,
+            request_source_token: #{embed_token.to_json},
+            messageTitle: 'Заявка с сайта партнёра',
+            messageSubmit: 'Отправить заявку',
+            messageThankYou: 'Спасибо. Заявка принята. Номер обращения #%s.',
+            attributes: #{JSON.pretty_generate(partner_form_attributes)}
+          });
+        });
+      </script>
+    HTML
+  end
+
+  def ensure_usable_for_form!(request:)
+    raise Exceptions::Forbidden, 'Dom-Servis request source is paused.' if paused?
+    raise Exceptions::Forbidden, 'Dom-Servis request source is not configured for Zammad forms.' if transport_kind != 'zammad_form'
+    raise Exceptions::UnprocessableEntity, 'Dom-Servis request source requires a partner organization.' if organization_id.blank?
+    raise Exceptions::Forbidden, 'Dom-Servis request source is not allowed from this domain.' if !allowed_domain?(request)
+
+    true
+  end
+
+  def allowed_domain?(request)
+    return true if allowed_domains.blank?
+
+    host = request_origin_host(request)
+    return true if host.blank?
+
+    allowed_domains.any? do |domain|
+      normalized = domain.to_s.strip.downcase
+      next false if normalized.blank?
+
+      host == normalized || host.end_with?(".#{normalized}")
+    end
+  end
+
+  def attributes_with_association_ids
+    super.merge(
+      display_name:           display_name,
+      organization_name:      Organization.find_by(id: organization_id)&.name,
+      embed_url:              embed_url,
+      embed_snippet:          embed_snippet,
+      embed_js_snippet:       embed_js_snippet,
+      allowed_domains_display: allowed_domains.join("\n"),
+      request_source_type:    transport_kind,
+    ).compact
+  end
+
+  class << self
+    def legacy_form_source
+      source = find_by(partner_key: LEGACY_FORM_PARTNER_KEY)
+      return source if source.present?
+
+      intake_enabled = Setting.get('dom_servis_form_intake_enabled') == true
+      organization_id = Setting.get('dom_servis_form_organization_id').presence
+      return nil if !intake_enabled && organization_id.blank?
+
+      source = find_or_initialize_by(partner_key: LEGACY_FORM_PARTNER_KEY)
+      source.name = 'Legacy Zammad Form' if source.name.blank?
+      source.embed_token = 'legacy-zammad-form-token' if source.embed_token.blank?
+      source.organization_id = organization_id if source.organization_id.blank? && organization_id.present?
+      source.transport_kind = 'zammad_form'
+      source.status = intake_enabled && organization_id.present? ? 'active' : 'paused'
+      source.allowed_domains = source.allowed_domains.presence || []
+      source.settings = source.settings.presence || {}
+      source.save! if source.changed?
+      source
+    end
+
+    def resolve_form_source(request_source_token:, request:)
+      if request_source_token.present?
+        source = find_by(embed_token: request_source_token)
+        raise Exceptions::Forbidden, 'Unknown Dom-Servis request source.' if source.blank?
+
+        source.ensure_usable_for_form!(request: request)
+        return source
+      end
+
+      source = legacy_form_source
+      return nil if source.blank? || source.paused?
+
+      source.ensure_usable_for_form!(request: request)
+      source
+    end
+  end
+
+  private
+
+  def normalize_partner_key
+    self.partner_key = normalize_slug(partner_key, fallback: name)
+  end
+
+  def normalize_transport_kind
+    self.transport_kind = transport_kind.to_s.strip.presence || 'zammad_form'
+  end
+
+  def normalize_status
+    self.status = status.to_s.strip.presence || 'paused'
+  end
+
+  def normalize_allowed_domains
+    self.allowed_domains = normalize_domains(allowed_domains)
+  end
+
+  def normalize_domains(value)
+    Array(value)
+      .flat_map { |entry| entry.to_s.split(/[\n,]/) }
+      .filter_map do |entry|
+        normalized = entry.to_s.strip.downcase
+        normalized = normalized.sub(%r{\Ahttps?://}, '')
+        normalized = normalized.sub(%r{/.*\z}, '')
+        normalized.presence
+      end
+      .uniq
+  end
+
+  def ensure_embed_token
+    return if embed_token.present? && !rotate_embed_token
+
+    self.embed_token = generate_token
+  end
+
+  def stamp_token_rotation
+    self.token_rotated_at = Time.zone.now if new_record? || rotate_embed_token
+  end
+
+  def generate_token
+    loop do
+      token = SecureRandom.urlsafe_base64(24)
+      return token if self.class.where(embed_token: token).none?
+    end
+  end
+
+  def normalize_slug(value, fallback:)
+    base = value.to_s.strip.downcase
+    base = fallback.to_s.strip.downcase.parameterize if base.blank? && fallback.present?
+    base = 'partner' if base.blank?
+
+    slug = base.parameterize
+    return slug if slug.present? && self.class.where.not(id: id).exists?(partner_key: slug) == false
+
+    loop do
+      suffix = SecureRandom.hex(3)
+      candidate = "#{slug.presence || 'partner'}-#{suffix}"
+      return candidate if self.class.where.not(id: id).exists?(partner_key: candidate) == false
+    end
+  end
+
+  def base_origin
+    http_type = Setting.get('http_type')
+    fqdn = Setting.get('fqdn')
+
+    "#{http_type}://#{fqdn}"
+  end
+
+  def request_origin_host(request)
+    origin = request_source_origin_param(request).presence || request&.origin.presence || request&.referer.presence
+    return nil if origin.blank?
+
+    parsed = URI.parse(origin)
+    host = parsed.host.presence || origin.to_s.sub(%r{\Ahttps?://}, '').split(/[\/?#]/, 2).first
+    host.to_s.downcase.presence
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  def request_source_origin_param(request)
+    request&.params&.[](:request_source_origin) || request&.params&.[]('request_source_origin')
+  end
+
+  def partner_form_attributes
+    [
+      {
+        display:      'Имя',
+        name:         'name',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-name',
+        required:     true,
+        placeholder:  'Иван Иванов',
+        defaultValue: '',
+      },
+      {
+        display:      'E-mail',
+        name:         'email',
+        tag:          'input',
+        type:         'email',
+        id:           'dom-servis-partner-email',
+        required:     true,
+        placeholder:  'name@example.com',
+        defaultValue: '',
+      },
+      {
+        display:      'Телефон',
+        name:         'dom_servis_client_phone',
+        tag:          'input',
+        type:         'tel',
+        id:           'dom-servis-partner-phone',
+        placeholder:  '+7 999 123-45-67',
+        defaultValue: '',
+      },
+      {
+        display:      'Адрес объекта',
+        name:         'dom_servis_address',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-address',
+        placeholder:  'Новосибирск, ул. Ленина, 10',
+        defaultValue: '',
+      },
+      {
+        display:      'Тип услуги',
+        name:         'dom_servis_service_type',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-service-type',
+        placeholder:  'Сантехника, электрика, бойлер и т.д.',
+        defaultValue: '',
+      },
+      {
+        display:      'Желаемый день',
+        name:         'dom_servis_visit_day',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-visit-day',
+        placeholder:  'понедельник',
+        defaultValue: '',
+      },
+      {
+        display:      'Желаемая дата',
+        name:         'dom_servis_visit_date',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-visit-date',
+        placeholder:  '2026-05-19',
+        defaultValue: '',
+      },
+      {
+        display:      'Желаемое время',
+        name:         'dom_servis_visit_time',
+        tag:          'input',
+        type:         'text',
+        id:           'dom-servis-partner-visit-time',
+        placeholder:  '10:00-12:00',
+        defaultValue: '',
+      },
+      {
+        display:      'Комментарий',
+        name:         'dom_servis_comment',
+        tag:          'textarea',
+        id:           'dom-servis-partner-comment',
+        placeholder:  'Дополнительные комментарии',
+        defaultValue: '',
+        rows:         4,
+      },
+      {
+        display:      'Описание проблемы',
+        name:         'body',
+        tag:          'textarea',
+        id:           'dom-servis-partner-body',
+        required:     true,
+        placeholder:  'Что случилось и что нужно сделать',
+        defaultValue: '',
+        rows:         6,
+      },
+      {
+        display:      'Вложения',
+        name:         'file[]',
+        tag:          'input',
+        type:         'file',
+        id:           'dom-servis-partner-files',
+        repeat:       3,
+      },
+    ]
+  end
+end

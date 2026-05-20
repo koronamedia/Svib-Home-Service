@@ -26,6 +26,7 @@ class DomServis::DispatchJob < ApplicationModel
   belongs_to :assignee, class_name: 'User', optional: true
   belongs_to :ticket, optional: true
   belongs_to :organization, optional: true
+  belongs_to :request_source, class_name: 'DomServis::RequestSource', optional: true
 
   has_many :events,
            class_name: 'DomServis::DispatchEvent',
@@ -69,6 +70,14 @@ class DomServis::DispatchJob < ApplicationModel
 
   def ui_url
     "#manage/dom_servis_dispatch/id:#{id}"
+  end
+
+  def attributes_with_association_ids
+    super.merge(
+      request_source_label: request_source&.display_name,
+      request_source_partner_key: request_source&.partner_key,
+      request_source_transport_kind: request_source&.transport_kind,
+    ).compact
   end
 
   private

@@ -406,6 +406,18 @@ $(function() {
     if (this.options.test) {
       params.test = true
     }
+    if (this.options.request_source_token) {
+      params.request_source_token = this.options.request_source_token
+    }
+    if (this.options.requestSourceToken) {
+      params.request_source_token = this.options.requestSourceToken
+    }
+    if (this.options.request_source_origin) {
+      params.request_source_origin = this.options.request_source_origin
+    }
+    if (this.options.requestSourceOrigin) {
+      params.request_source_origin = this.options.requestSourceOrigin
+    }
 
     params.fingerprint = this.fingerprint()
 
@@ -530,6 +542,18 @@ $(function() {
 
     if (this.options.test) {
       formData.append('test', true)
+    }
+    if (this.options.request_source_token) {
+      formData.append('request_source_token', this.options.request_source_token)
+    }
+    if (this.options.requestSourceToken) {
+      formData.append('request_source_token', this.options.requestSourceToken)
+    }
+    if (this.options.request_source_origin) {
+      formData.append('request_source_origin', this.options.request_source_origin)
+    }
+    if (this.options.requestSourceOrigin) {
+      formData.append('request_source_origin', this.options.requestSourceOrigin)
     }
     formData.append('token', this._config.token)
 

@@ -1336,6 +1336,7 @@ class App.DomServisDispatchBoard extends App.Controller
         items: _.compact([
           @detailItem('Код заявки', job.job_code || @fallbackJobCode(job))
           @detailItem('Источник', @sourceLabel(job.source || 'manual'))
+          @detailItem('Партнёр', job.request_source_label || job.request_source_partner_key || 'Не задан')
           @detailItem('Backing Ticket', job.ticket_id || 'Ещё не создан')
         ])
       }

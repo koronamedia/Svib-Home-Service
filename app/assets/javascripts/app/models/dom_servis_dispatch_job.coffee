@@ -1,5 +1,5 @@
 class App.DomServisDispatchJob extends App.Model
-  @configure 'DomServisDispatchJob', 'job_code', 'service_type', 'address', 'client_name', 'client_phone', 'visit_day', 'visit_date', 'visit_time', 'priority', 'status', 'source', 'assignee_id', 'organization_id', 'description', 'comment', 'work_tags', 'published_at', 'taken_at', 'created_by_id', 'created_at', 'updated_by_id', 'updated_at'
+  @configure 'DomServisDispatchJob', 'job_code', 'service_type', 'address', 'client_name', 'client_phone', 'visit_day', 'visit_date', 'visit_time', 'priority', 'status', 'source', 'request_source_id', 'request_source_label', 'request_source_partner_key', 'request_source_transport_kind', 'assignee_id', 'organization_id', 'description', 'comment', 'work_tags', 'published_at', 'taken_at', 'created_by_id', 'created_at', 'updated_by_id', 'updated_at'
   @extend Spine.Model.Ajax
   @url: @apiPath + '/dom_servis/dispatch/jobs'
   @configure_attributes = [
