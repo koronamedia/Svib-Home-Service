@@ -137,6 +137,7 @@ class FormController < ApplicationController
 
   def validate_params
     errors = {}
+    partner_form = dom_servis_request_source.present?
 
     if params[:name].blank?
       errors['name'] = 'required'
@@ -149,7 +150,7 @@ class FormController < ApplicationController
     end
 
     if params[:email].blank?
-      errors['email'] = 'required'
+      errors['email'] = 'required' if !partner_form
     else
       begin
         email_address_validation = EmailAddressValidation.new(params[:email])
@@ -170,7 +171,8 @@ class FormController < ApplicationController
 
   def fetch_customer
     name  = params[:name].strip
-    email = params[:email].strip.downcase
+    email = params[:email].presence || generated_dom_servis_email
+    email = email.strip.downcase
 
     User.create_with(
       firstname:     name,
@@ -179,6 +181,15 @@ class FormController < ApplicationController
       updated_by_id: 1,
       created_by_id: 1,
     ).find_or_create_by(email:)
+  end
+
+  def generated_dom_servis_email
+    request_source = dom_servis_request_source
+    source_key = request_source&.partner_key.presence || 'form'
+    fingerprint = params[:fingerprint].to_s
+    digest = Digest::SHA256.hexdigest([Setting.get('fqdn'), source_key, fingerprint].join(':'))
+    local_part = "dom-servis-#{digest[0, 24]}"
+    "#{local_part}@#{Setting.get('fqdn')}"
   end
 
   def create_ticket(customer)

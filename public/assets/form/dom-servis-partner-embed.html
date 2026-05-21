@@ -3,305 +3,1008 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a1018">
   <title>Дом-Сервис | Заявка партнёра</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #171b22;
-      --panel-2: #1d232d;
-      --text: #f1f5f9;
-      --muted: #9aa4b2;
-      --border: #2a3240;
-      --accent: #57b7ff;
-      --accent-strong: #1f8fe6;
-      --shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+      --bg: #08101a;
+      --bg-2: #0d1522;
+      --surface: rgba(11, 17, 27, 0.82);
+      --surface-2: rgba(15, 23, 36, 0.92);
+      --surface-3: rgba(255, 255, 255, 0.04);
+      --text: #edf3f8;
+      --muted: #97a6b7;
+      --muted-2: #748293;
+      --border: rgba(174, 195, 219, 0.16);
+      --field-bg: rgba(255, 255, 255, 0.96);
+      --field-text: #0f172a;
+      --field-placeholder: #9aa8b8;
+      --accent: #6bc6ff;
+      --accent-strong: #2e9bff;
+      --accent-soft: rgba(107, 198, 255, 0.14);
+      --success: #28c76f;
+      --warning: #f6b84e;
+      --danger: #ef5b6a;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.36);
+      --radius: 28px;
     }
 
-    * {
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(107, 198, 255, 0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(46, 155, 255, 0.10), transparent 24%),
+        radial-gradient(circle at bottom center, rgba(40, 199, 111, 0.06), transparent 22%),
+        linear-gradient(180deg, #060c14 0%, #09111b 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
     }
 
     body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, rgba(87, 183, 255, 0.14), transparent 34%),
-        radial-gradient(circle at top right, rgba(31, 143, 230, 0.12), transparent 28%),
-        linear-gradient(180deg, #0c0f14 0%, var(--bg) 100%);
-      color: var(--text);
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.5;
+      padding: 24px 16px 36px;
     }
 
     .page {
-      width: min(940px, calc(100% - 32px));
+      width: min(1040px, 100%);
       margin: 0 auto;
-      padding: 40px 0 56px;
     }
 
     .hero {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 28px 28px 24px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      margin-bottom: 24px;
+      padding: 6px 4px 22px;
     }
 
     .eyebrow {
       margin: 0 0 10px;
       color: var(--accent);
-      letter-spacing: 0.08em;
       text-transform: uppercase;
+      letter-spacing: 0.16em;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     h1 {
-      margin: 0 0 12px;
-      font-size: clamp(30px, 4vw, 46px);
-      line-height: 1.05;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 54px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
     }
 
     .lead {
-      margin: 0;
-      max-width: 68ch;
+      margin: 14px 0 0;
+      max-width: 56ch;
       color: var(--muted);
       font-size: 16px;
     }
 
-    .meta {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-top: 22px;
-    }
-
-    .meta-item {
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .meta-item strong {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .panel {
-      background: var(--panel);
+    .shell {
+      position: relative;
+      overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 24px;
+      border-radius: calc(var(--radius) + 4px);
+      background:
+        linear-gradient(180deg, rgba(14, 21, 33, 0.96), rgba(8, 13, 21, 0.98));
       box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
     }
 
-    .panel-head {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 16px;
-      justify-content: space-between;
-      align-items: center;
+    .shell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at top right, rgba(107, 198, 255, 0.09), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(40, 199, 111, 0.05), transparent 22%);
+    }
+
+    .shell-inner {
+      position: relative;
+      z-index: 1;
+      padding: 26px;
+    }
+
+    .banner {
+      display: none;
       margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .panel-title {
+    .banner--info {
+      background: rgba(107, 198, 255, 0.10);
+      border: 1px solid rgba(107, 198, 255, 0.24);
+      color: #d6f0ff;
+    }
+
+    .banner--warn {
+      background: rgba(246, 184, 78, 0.12);
+      border: 1px solid rgba(246, 184, 78, 0.24);
+      color: #fde8b8;
+    }
+
+    .banner--error {
+      background: rgba(239, 91, 106, 0.12);
+      border: 1px solid rgba(239, 91, 106, 0.24);
+      color: #ffd0d6;
+    }
+
+    .banner--success {
+      background: rgba(40, 199, 111, 0.12);
+      border: 1px solid rgba(40, 199, 111, 0.24);
+      color: #cbf7dd;
+    }
+
+    .loading {
+      min-height: 520px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 52px 20px;
+    }
+
+    .loading__spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+
+    .form-card {
+      display: grid;
+      gap: 24px;
+      padding: 6px 2px 0;
+    }
+
+    .form-section {
+      display: grid;
+      gap: 16px;
+      padding: 22px 0 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .form-section:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .section-head {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+
+    .section-title {
       margin: 0;
-      font-size: 20px;
+      color: #f4f8fb;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    .panel-note {
+    .section-copy {
       margin: 0;
       color: var(--muted);
       font-size: 14px;
+      max-width: 70ch;
     }
 
-    #dom-servis-partner-form {
-      padding: 6px 0 0;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
 
-    .footnote {
-      margin-top: 18px;
+    .grid--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field--wide {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #dbe6f1;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .req {
+      color: #a9dbff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--field-bg);
+      color: var(--field-text);
+      padding: 14px 15px;
+      font: inherit;
+      font-size: 15px;
+      outline: none;
+      transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease,
+        background-color 0.18s ease;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--field-placeholder);
+    }
+
+    input:hover,
+    textarea:hover {
+      transform: translateY(-1px);
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(107, 198, 255, 0.96);
+      box-shadow: 0 0 0 4px rgba(107, 198, 255, 0.15);
+    }
+
+    input[aria-invalid="true"],
+    textarea[aria-invalid="true"] {
+      border-color: rgba(239, 91, 106, 0.92);
+      box-shadow: 0 0 0 4px rgba(239, 91, 106, 0.14);
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .field-help {
       color: var(--muted);
       font-size: 13px;
+    }
+
+    .field-error {
+      min-height: 18px;
+      color: #ffb3be;
+      font-size: 13px;
+    }
+
+    .date-meta {
+      color: #c5d4e2;
+      font-size: 13px;
+      min-height: 20px;
+    }
+
+    .date-meta strong {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .attachments {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025));
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+    }
+
+    .attachments__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .attachments__title {
+      margin: 0;
+      color: #f4f8fb;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .attachments__note {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 60ch;
+    }
+
+    .file-trigger {
+      flex: 0 0 auto;
+      appearance: none;
+      border: 1px solid rgba(107, 198, 255, 0.28);
+      background: rgba(107, 198, 255, 0.08);
+      color: #d8f0ff;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .file-trigger:hover {
+      transform: translateY(-1px);
+      background: rgba(107, 198, 255, 0.12);
+      border-color: rgba(107, 198, 255, 0.4);
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .file-selector {
+      color: #203042;
+    }
+
+    .attachments__files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: #d4e1ec;
+      font-size: 13px;
+      min-height: 22px;
+    }
+
+    .file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #edf3f8;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+    }
+
+    .submit {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-strong), #67ccff);
+      color: #05111c;
+      font: inherit;
+      font-weight: 850;
+      padding: 15px 22px;
+      min-width: 240px;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(46, 155, 255, 0.26);
+      transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .submit:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(46, 155, 255, 0.30);
+    }
+
+    .submit:disabled {
+      opacity: 0.58;
+      cursor: wait;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .fineprint {
+      color: var(--muted-2);
+      font-size: 13px;
+      max-width: 50ch;
+    }
+
+    .success {
+      display: grid;
+      gap: 12px;
+      padding: 20px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(40, 199, 111, 0.12), rgba(255, 255, 255, 0.03));
+      border: 1px solid rgba(40, 199, 111, 0.18);
+    }
+
+    .success__eyebrow {
+      margin: 0;
+      color: #7dffba;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .success h3 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 28px);
+      letter-spacing: -0.02em;
+    }
+
+    .success p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 900px) {
+      .grid--three {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 16px 12px 24px;
+      }
+
+      .hero {
+        padding-bottom: 18px;
+      }
+
+      .shell-inner {
+        padding: 18px 14px;
+      }
+
+      .grid,
+      .grid--three {
+        grid-template-columns: 1fr;
+      }
+
+      .attachments__head,
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .submit,
+      .file-trigger {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <main class="page">
     <section class="hero">
-      <p class="eyebrow">Dom-Service partner intake</p>
-      <h1>Заявка с сайта партнёра</h1>
-      <p class="lead">
-        Это внешний партнерский embed. Он отправляет заявку в Zammad form intake,
-        а дальше наш bridge промоутит её в <code>DispatchJob</code>.
-        Partner organization задаётся на стороне канала, а не в HTML.
-      </p>
-
-      <div class="meta">
-        <div class="meta-item">
-          <strong>Channel binding</strong>
-          Организация задаётся в настройках канала на стороне Dom-Servis.
-        </div>
-        <div class="meta-item">
-          <strong>Operational source of truth</strong>
-          После intake заявка живёт как <code>DispatchJob</code>.
-        </div>
-        <div class="meta-item">
-          <strong>Do not send</strong>
-          Не добавляй <code>organization_id</code> в payload формы.
-        </div>
-      </div>
+      <p class="eyebrow">Заявка</p>
+      <h1>Оставьте заявку</h1>
+      <p class="lead">Мастер свяжется с вами после отправки. Выберите дату в календаре, а день недели подставится автоматически.</p>
     </section>
 
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">Форма заявки</h2>
-          <p class="panel-note">Можно вставлять этот блок в сайт партнёра как готовый шаблон.</p>
+    <section class="shell" aria-live="polite">
+      <div class="shell-inner">
+        <div id="banner" class="banner" role="alert" aria-live="assertive"></div>
+        <div id="loading" class="loading">
+          <div>
+            <div class="loading__spinner" aria-hidden="true"></div>
+            <div>Подготавливаем форму заявки...</div>
+          </div>
         </div>
+        <div id="formHost" class="hidden"></div>
+        <div id="successHost" class="hidden"></div>
       </div>
-
-      <div id="dom-servis-partner-form"></div>
-
-      <p class="footnote">
-        Если партнёру нужен отдельный контактный человек, можно включить
-        <code>dom_servis_client_name</code> как дополнительное поле.
-        В этом шаблоне основное имя клиента передаётся через стандартное поле <code>name</code>.
-      </p>
     </section>
   </main>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script id="zammad_form_script" src="https://master.svib-dom-service.ru/assets/form/form.js"></script>
-
   <script>
-    $(function() {
-      const requestSourceToken = new URLSearchParams(window.location.search).get('request_source_token') || '';
-      const requestSourceOrigin = document.referrer || window.location.origin;
+    (function() {
+      const state = {
+        fingerprint: fingerprint(),
+        requestSourceToken: new URLSearchParams(window.location.search).get('request_source_token') || '',
+        requestSourceOrigin: inferRequestSourceOrigin(),
+        config: null,
+        submitting: false,
+      };
 
-      $('#dom-servis-partner-form').ZammadForm({
-        lang: 'ru',
-        modal: false,
-        showTitle: true,
-        noCSS: false,
-        attachmentSupport: true,
-        request_source_token: requestSourceToken,
-        request_source_origin: requestSourceOrigin,
-        messageTitle: 'Заявка с сайта партнёра',
-        messageSubmit: 'Отправить заявку',
-        messageThankYou: 'Спасибо. Заявка принята. Номер обращения #%s.',
-        attributes: [
-          {
-            display: 'Имя',
-            name: 'name',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-name',
-            required: true,
-            placeholder: 'Иван Иванов',
-            defaultValue: '',
-          },
-          {
-            display: 'E-mail',
-            name: 'email',
-            tag: 'input',
-            type: 'email',
-            id: 'dom-servis-partner-email',
-            required: true,
-            placeholder: 'name@example.com',
-            defaultValue: '',
-          },
-          {
-            display: 'Телефон',
-            name: 'dom_servis_client_phone',
-            tag: 'input',
-            type: 'tel',
-            id: 'dom-servis-partner-phone',
-            placeholder: '+7 999 123-45-67',
-            defaultValue: '',
-          },
-          {
-            display: 'Адрес объекта',
-            name: 'dom_servis_address',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-address',
-            placeholder: 'Новосибирск, ул. Ленина, 10',
-            defaultValue: '',
-          },
-          {
-            display: 'Тип услуги',
-            name: 'dom_servis_service_type',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-service-type',
-            placeholder: 'Сантехника, электрика, бойлер и т.д.',
-            defaultValue: '',
-          },
-          {
-            display: 'Желаемый день',
-            name: 'dom_servis_visit_day',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-visit-day',
-            placeholder: 'понедельник',
-            defaultValue: '',
-          },
-          {
-            display: 'Желаемая дата',
-            name: 'dom_servis_visit_date',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-visit-date',
-            placeholder: '2026-05-19',
-            defaultValue: '',
-          },
-          {
-            display: 'Желаемое время',
-            name: 'dom_servis_visit_time',
-            tag: 'input',
-            type: 'text',
-            id: 'dom-servis-partner-visit-time',
-            placeholder: '10:00-12:00',
-            defaultValue: '',
-          },
-          {
-            display: 'Комментарий',
-            name: 'dom_servis_comment',
-            tag: 'textarea',
-            id: 'dom-servis-partner-comment',
-            placeholder: 'Дополнительные комментарии',
-            defaultValue: '',
-            rows: 4,
-          },
-          {
-            display: 'Описание проблемы',
-            name: 'body',
-            tag: 'textarea',
-            id: 'dom-servis-partner-body',
-            required: true,
-            placeholder: 'Что случилось и что нужно сделать',
-            defaultValue: '',
-            rows: 6,
-          },
-          {
-            display: 'Вложения',
-            name: 'file[]',
-            tag: 'input',
-            type: 'file',
-            id: 'dom-servis-partner-files',
-            repeat: 3,
-          },
-        ]
-      });
-    });
+      const API_ORIGIN = window.location.hostname === 'master.svib-dom-service.ru'
+        ? window.location.origin
+        : 'https://master.svib-dom-service.ru';
+
+      const refs = {
+        banner: document.getElementById('banner'),
+        loading: document.getElementById('loading'),
+        formHost: document.getElementById('formHost'),
+        successHost: document.getElementById('successHost'),
+      };
+
+      function fingerprint() {
+        const storageKey = 'dom-servis-partner-fingerprint';
+        const existing = window.localStorage.getItem(storageKey);
+        if (existing && existing.length > 30) return existing;
+
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        const value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('') + Date.now().toString(16);
+        window.localStorage.setItem(storageKey, value);
+        return value;
+      }
+
+      function inferRequestSourceOrigin() {
+        const candidates = [];
+
+        if (document.referrer) candidates.push(document.referrer);
+        if (window.location.ancestorOrigins && window.location.ancestorOrigins.length) {
+          candidates.push(window.location.ancestorOrigins[0]);
+        }
+
+        for (const candidate of candidates) {
+          try {
+            return new URL(candidate).origin;
+          } catch (error) {
+            continue;
+          }
+        }
+
+        return window.location.origin;
+      }
+
+      function weekdayLabel(value) {
+        if (!value) return '';
+
+        const weekdayMap = {
+          0: 'Воскресенье',
+          1: 'Понедельник',
+          2: 'Вторник',
+          3: 'Среда',
+          4: 'Четверг',
+          5: 'Пятница',
+          6: 'Суббота',
+        };
+
+        const date = new Date(`${value}T00:00:00`);
+        if (Number.isNaN(date.getTime())) return '';
+
+        return weekdayMap[date.getDay()] || '';
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function generateContactEmail() {
+        return `dom-servis-${state.fingerprint.slice(0, 24)}@zammad.com`;
+      }
+
+      function setBanner(message, variant = 'info') {
+        refs.banner.className = `banner banner--${variant}`;
+        refs.banner.textContent = message;
+        refs.banner.style.display = 'block';
+      }
+
+      function hideBanner() {
+        refs.banner.style.display = 'none';
+      }
+
+      function setLoading(isLoading) {
+        refs.loading.classList.toggle('hidden', !isLoading);
+      }
+
+      function showForm(formEl) {
+        refs.formHost.innerHTML = '';
+        refs.formHost.appendChild(formEl);
+        refs.formHost.classList.remove('hidden');
+      }
+
+      function showSuccess(ticketNumber) {
+        refs.formHost.classList.add('hidden');
+        refs.successHost.innerHTML = `
+          <div class="success">
+            <p class="success__eyebrow">Готово</p>
+            <h3>Заявка отправлена</h3>
+            <p>Спасибо. Заявка принята${ticketNumber ? `, номер обращения #${escapeHtml(ticketNumber)}` : ''}.</p>
+          </div>
+        `;
+        refs.successHost.classList.remove('hidden');
+      }
+
+      function setFieldError(field, message) {
+        const errorEl = document.querySelector(`[data-error-for="${field}"]`);
+        const input = document.querySelector(`[name="${field}"]`);
+        if (errorEl) errorEl.textContent = message || '';
+        if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+      }
+
+      function clearFieldErrors() {
+        document.querySelectorAll('[data-error-for]').forEach((el) => { el.textContent = ''; });
+        document.querySelectorAll('[aria-invalid="true"]').forEach((el) => {
+          el.setAttribute('aria-invalid', 'false');
+        });
+      }
+
+      function clearErrorBanner() {
+        hideBanner();
+      }
+
+      function validate(values) {
+        const errors = {};
+        if (!values.name?.trim()) errors.name = 'Введите имя';
+        if (!values.dom_servis_client_phone?.trim()) errors.dom_servis_client_phone = 'Введите телефон';
+        if (!values.dom_servis_service_type?.trim()) errors.dom_servis_service_type = 'Введите тип услуги';
+        if (!values.dom_servis_address?.trim()) errors.dom_servis_address = 'Введите адрес';
+        if (!values.dom_servis_visit_date?.trim()) errors.dom_servis_visit_date = 'Выберите дату';
+        if (!values.body?.trim()) errors.body = 'Опишите проблему';
+        return errors;
+      }
+
+      function humanizeServerError(message) {
+        const text = String(message || '');
+        const lower = text.toLowerCase();
+
+        if (lower === 'required') return 'Это поле обязательно';
+        if (lower === 'invalid') return 'Введите корректное значение';
+        if (lower.includes('email') && lower.includes('invalid')) return 'Введите корректный e-mail';
+        if (lower.includes('email') && lower.includes('required')) return 'Введите e-mail';
+        if (lower.includes('visit day')) return 'День недели считается автоматически после выбора даты';
+        if (lower.includes('visit date')) return 'Выберите дату визита';
+        if (lower.includes('service type')) return 'Введите тип услуги';
+        if (lower.includes('address')) return 'Введите адрес';
+        if (lower.includes('name') && lower.includes('required')) return 'Введите имя';
+        if (lower.includes('body') && lower.includes('required')) return 'Опишите проблему';
+        if (lower.includes('paused')) return 'Форма временно недоступна';
+
+        return text || 'Не удалось отправить заявку';
+      }
+
+      function mapServerErrors(errors) {
+        const mapped = {};
+        Object.entries(errors || {}).forEach(([field, message]) => {
+          if (field === 'base') {
+            mapped.base = message;
+            return;
+          }
+          mapped[field] = humanizeServerError(message);
+        });
+        return mapped;
+      }
+
+      function renderErrors(errors) {
+        const firstField = Object.keys(errors).find((key) => key !== 'base');
+        Object.entries(errors).forEach(([field, message]) => {
+          if (field === 'base') return;
+          setFieldError(field, message);
+        });
+
+        if (firstField) {
+          const el = document.querySelector(`[name="${firstField}"]`);
+          if (el && el.focus) el.focus({ preventScroll: false });
+        }
+      }
+
+      function buildPayload(form) {
+        const payload = new FormData();
+        const fd = new FormData(form);
+
+        fd.forEach((value, key) => {
+          if (key === 'file[]') return;
+          if (key === 'dom_servis_summary') return;
+          payload.append(key, value);
+        });
+
+        payload.set('request_source_token', state.requestSourceToken);
+        payload.set('request_source_origin', state.requestSourceOrigin);
+        payload.set('fingerprint', state.fingerprint);
+        payload.set('title', form.querySelector('[name="title"]').value || 'Заявка с сайта партнёра');
+        payload.set('name', form.querySelector('[name="name"]').value.trim());
+        payload.set('body', form.querySelector('[name="body"]').value.trim());
+        payload.set('dom_servis_client_phone', form.querySelector('[name="dom_servis_client_phone"]').value.trim());
+        payload.set('dom_servis_service_type', form.querySelector('[name="dom_servis_service_type"]').value.trim());
+        payload.set('dom_servis_address', form.querySelector('[name="dom_servis_address"]').value.trim());
+        payload.set('dom_servis_visit_date', form.querySelector('[name="dom_servis_visit_date"]').value.trim());
+        payload.set('dom_servis_visit_time', form.querySelector('[name="dom_servis_visit_time"]').value.trim());
+
+        Array.from(form.querySelector('#fileInput').files || []).forEach((file) => {
+          payload.append('file[]', file);
+        });
+
+        return payload;
+      }
+
+      function buildForm() {
+        const form = document.createElement('form');
+        form.className = 'form-card';
+        form.noValidate = true;
+
+        form.innerHTML = `
+          <input type="hidden" name="fingerprint" value="${escapeHtml(state.fingerprint)}">
+          <input type="hidden" name="token" value="">
+          <input type="hidden" name="request_source_token" value="${escapeHtml(state.requestSourceToken)}">
+          <input type="hidden" name="request_source_origin" value="${escapeHtml(state.requestSourceOrigin)}">
+          <input type="hidden" name="title" value="">
+          <input type="hidden" name="dom_servis_summary" value="">
+          <input type="hidden" name="email" value="">
+
+          <section class="form-section">
+            <div class="section-head">
+              <h2 class="section-title">Контактные данные</h2>
+              <p class="section-copy">Оставьте имя и телефон, чтобы мы могли быстро связаться с вами.</p>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="name">Имя <span class="req">*</span></label>
+                <input id="name" name="name" type="text" autocomplete="name" placeholder="Иван Иванов" required>
+                <div class="field-error" data-error-for="name"></div>
+              </div>
+
+              <div class="field">
+                <label for="dom_servis_client_phone">Телефон <span class="req">*</span></label>
+                <input id="dom_servis_client_phone" name="dom_servis_client_phone" type="tel" autocomplete="tel" placeholder="+7 999 123-45-67" required>
+                <div class="field-error" data-error-for="dom_servis_client_phone"></div>
+              </div>
+            </div>
+          </section>
+<section class="form-section">
+            <div class="section-head">
+              <h2 class="section-title">Объект и услуга</h2>
+              <p class="section-copy">Укажите адрес объекта и кратко опишите, что требуется сделать.</p>
+            </div>
+            <div class="field">
+              <label for="dom_servis_address">Адрес объекта <span class="req">*</span></label>
+              <input id="dom_servis_address" name="dom_servis_address" type="text" autocomplete="street-address" placeholder="Томск, ул. Ленина, 10" required>
+              <div class="field-error" data-error-for="dom_servis_address"></div>
+            </div>
+
+            <div class="field">
+              <label for="dom_servis_service_type">Тип услуги <span class="req">*</span></label>
+              <input id="dom_servis_service_type" name="dom_servis_service_type" type="text" placeholder="Сантехника, электрика, котёл..." required>
+              <div class="field-error" data-error-for="dom_servis_service_type"></div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-head">
+              <h2 class="section-title">Дата и время</h2>
+              <p class="section-copy">Выберите дату в календаре. День недели подставится автоматически.</p>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="dom_servis_visit_date">Дата визита <span class="req">*</span></label>
+                <input id="dom_servis_visit_date" name="dom_servis_visit_date" type="date" required>
+                <div class="date-meta" id="weekdayMeta">Выберите дату в календаре</div>
+                <div class="field-error" data-error-for="dom_servis_visit_date"></div>
+              </div>
+
+              <div class="field">
+                <label for="dom_servis_visit_time">Время визита</label>
+                <input id="dom_servis_visit_time" name="dom_servis_visit_time" type="time" step="900">
+                <div class="field-help">Если точного времени нет, поле можно оставить пустым.</div>
+                <div class="field-error" data-error-for="dom_servis_visit_time"></div>
+              </div>
+            </div>
+            <div class="field-help">Название заявки соберётся автоматически, вам это поле заполнять не нужно.</div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-head">
+              <h2 class="section-title">Описание и вложения</h2>
+              <p class="section-copy">Добавьте детали и прикрепите фото или файл, если это поможет быстрее понять задачу.</p>
+            </div>
+
+            <div class="field field--wide">
+              <label for="body">Опишите проблему <span class="req">*</span></label>
+              <textarea id="body" name="body" placeholder="Что случилось и что нужно сделать" required></textarea>
+              <div class="field-error" data-error-for="body"></div>
+            </div>
+
+            <div class="field field--wide">
+              <div class="attachments">
+                <div class="attachments__head">
+                  <div>
+                    <p class="attachments__title">Вложения</p>
+                    <p class="attachments__note">Можно прикрепить фото, видео или документ. Это помогает быстрее оценить задачу.</p>
+                  </div>
+                  <button type="button" class="file-trigger" id="fileTrigger">Выбрать файлы</button>
+                </div>
+                <input id="fileInput" class="file-input" name="file[]" type="file" multiple accept="image/*,video/*,.pdf,.jpg,.jpeg,.png,.webp">
+                <div class="attachments__files" id="selectedFiles">Файлы не выбраны</div>
+              </div>
+              <div class="field-error" data-error-for="file[]"></div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="actions">
+              <button type="submit" class="submit">Отправить заявку</button>
+              <div class="fineprint">После отправки заявка попадёт в обработку, и мастер свяжется с вами.</div>
+            </div>
+          </section>
+        `;
+
+        const titleInput = form.querySelector('[name="title"]');
+        const summaryInput = form.querySelector('[name="dom_servis_summary"]');
+        const emailInput = form.querySelector('[name="email"]');
+        const serviceTypeInput = form.querySelector('#dom_servis_service_type');
+        const dateInput = form.querySelector('#dom_servis_visit_date');
+        const weekdayMeta = form.querySelector('#weekdayMeta');
+        const fileInput = form.querySelector('#fileInput');
+        const fileTrigger = form.querySelector('#fileTrigger');
+        const selectedFiles = form.querySelector('#selectedFiles');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (emailInput) {
+          emailInput.value = generateContactEmail();
+        }
+
+        const syncSummary = () => {
+          const serviceType = serviceTypeInput.value.trim();
+          const dateValue = dateInput.value.trim();
+          const weekday = weekdayLabel(dateValue);
+
+          const summaryPieces = [];
+          if (serviceType) summaryPieces.push(serviceType);
+          if (dateValue) summaryPieces.push(dateValue);
+
+          summaryInput.value = summaryPieces.join(' • ');
+          titleInput.value = serviceType ? `Заявка: ${serviceType}` : 'Заявка с сайта партнёра';
+          weekdayMeta.innerHTML = weekday
+            ? `День недели: <strong>${escapeHtml(weekday)}</strong>`
+            : 'Выберите дату в календаре';
+        };
+
+        const syncFiles = () => {
+          const files = Array.from(fileInput.files || []);
+          if (!files.length) {
+            selectedFiles.textContent = 'Файлы не выбраны';
+            return;
+          }
+
+          selectedFiles.innerHTML = files
+            .map((file) => `<span class="file-chip" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>`)
+            .join('');
+        };
+
+        fileTrigger.addEventListener('click', () => fileInput.click());
+        serviceTypeInput.addEventListener('input', syncSummary);
+        dateInput.addEventListener('change', syncSummary);
+        fileInput.addEventListener('change', syncFiles);
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          clearErrorBanner();
+          clearFieldErrors();
+
+          const values = Object.fromEntries(new FormData(form).entries());
+          const errors = validate(values);
+
+          if (Object.keys(errors).length) {
+            renderErrors(errors);
+            return;
+          }
+
+          submitButton.disabled = true;
+          submitButton.textContent = 'Отправляем...';
+
+          try {
+            const payload = buildPayload(form);
+            const response = await fetch(state.config.endpoint || `${API_ORIGIN}/api/v1/form_submit`, {
+              method: 'POST',
+              body: payload,
+              credentials: 'same-origin',
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || (data && data.errors)) {
+              const serverErrors = data.errors || { base: 'Не удалось отправить заявку.' };
+              renderErrors(mapServerErrors(serverErrors));
+              const baseError = serverErrors.base || serverErrors.error_human || serverErrors.error;
+              if (baseError) setBanner(humanizeServerError(baseError), 'error');
+              return;
+            }
+
+            showSuccess(data.ticket?.number || '');
+          } catch (error) {
+            setBanner('Не удалось отправить заявку. Проверьте соединение и попробуйте ещё раз.', 'error');
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Отправить заявку';
+          }
+        });
+
+        syncSummary();
+        syncFiles();
+
+        return form;
+      }
+
+      async function bootstrap() {
+        try {
+          const configPayload = new URLSearchParams();
+          configPayload.set('fingerprint', state.fingerprint);
+          if (state.requestSourceToken) configPayload.set('request_source_token', state.requestSourceToken);
+          if (state.requestSourceOrigin) configPayload.set('request_source_origin', state.requestSourceOrigin);
+
+          const response = await fetch(`${API_ORIGIN}/api/v1/form_config`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+              'Accept': 'application/json',
+            },
+            body: configPayload.toString(),
+            credentials: 'same-origin',
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Форма временно недоступна.');
+          }
+
+          if (!data.enabled) {
+            setBanner('Форма временно недоступна. Попробуйте позже или свяжитесь с менеджером.', 'warn');
+            setLoading(false);
+            return;
+          }
+
+          state.config = data;
+          const form = buildForm();
+          const tokenInput = form.querySelector('[name="token"]');
+          if (tokenInput) {
+            tokenInput.value = data.token || '';
+          }
+
+          showForm(form);
+          hideBanner();
+          setLoading(false);
+        } catch (error) {
+          setBanner(error.message || 'Не удалось загрузить форму.', 'error');
+          setLoading(false);
+        }
+      }
+
+      bootstrap();
+    })();
   </script>
 </body>
 </html>

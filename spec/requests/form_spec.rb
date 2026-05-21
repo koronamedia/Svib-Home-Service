@@ -346,6 +346,74 @@ RSpec.describe 'Form', type: :request do
         expect(ticket.dom_servis_service_type).to eq('Boiler repair')
         expect(ticket.preferences.dig('dom_servis_intake', 'source')).to eq('form')
       end
+
+      it 'infers weekday from visit_date when the partner form does not send visit_day' do
+        params = {
+          fingerprint: fingerprint,
+          token:       token,
+          name:        'Bob Smith',
+          email:       'discard@zammad.com',
+          title:       'Need help with boiler',
+          body:        'The boiler is leaking and needs inspection.',
+          dom_servis_service_type: 'Boiler repair',
+          dom_servis_address:      'Lenina 10',
+          dom_servis_client_name:   'Bob Smith',
+          dom_servis_client_phone:  '+79001234567',
+          dom_servis_visit_date:    '2026-03-23',
+          dom_servis_visit_time:    '10:00',
+          dom_servis_dispatch_priority: 'high',
+          dom_servis_description:   'Need replacement and inspection.',
+          dom_servis_comment:       'Call before arrival',
+          dom_servis_work_tags:     'boiler,urgent',
+        }
+
+        post '/api/v1/form_submit', params: params, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response['errors']).to be_falsey
+
+        ticket = Ticket.find(json_response['ticket']['id'])
+        job = DomServis::DispatchJob.find_by(ticket_id: ticket.id)
+
+        expect(job).to be_persisted
+        expect(job.visit_date).to eq('2026-03-23')
+        expect(job.visit_day).to eq('mon')
+        expect(ticket.dom_servis_visit_date).to eq('2026-03-23')
+      end
+
+      it 'creates a dispatch job when the partner form does not expose an email field' do
+        params = {
+          fingerprint: fingerprint,
+          token:       token,
+          name:        'Bob Smith',
+          title:       'Need help with boiler',
+          body:        'The boiler is leaking and needs inspection.',
+          dom_servis_service_type: 'Boiler repair',
+          dom_servis_address:      'Lenina 10',
+          dom_servis_client_name:   'Bob Smith',
+          dom_servis_client_phone:  '+79001234567',
+          dom_servis_visit_date:    '2026-03-23',
+          dom_servis_visit_time:    '10:00',
+          dom_servis_dispatch_priority: 'high',
+          dom_servis_description:   'Need replacement and inspection.',
+          dom_servis_comment:       'Call before arrival',
+          dom_servis_work_tags:     'boiler,urgent',
+        }
+
+        post '/api/v1/form_submit', params: params, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response['errors']).to be_falsey
+        expect(json_response['ticket']).to be_truthy
+
+        ticket = Ticket.find(json_response['ticket']['id'])
+        job = DomServis::DispatchJob.find_by(ticket_id: ticket.id)
+
+        expect(job).to be_persisted
+        expect(job.organization_id).to eq(partner_org.id)
+        expect(ticket.customer.email).to be_present
+        expect(ticket.preferences.dig('dom_servis_intake', 'partner_org_id')).to eq(partner_org.id)
+      end
     end
 
     context 'when two partners use the same transport', db_strategy: :reset do

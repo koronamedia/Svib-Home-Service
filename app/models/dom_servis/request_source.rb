@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
+﻿# Copyright (C) 2012-2026 Zammad Foundation, https://zammad-foundation.org/
 
 class DomServis::RequestSource < ApplicationModel
   include CanSelector
@@ -69,21 +69,23 @@ class DomServis::RequestSource < ApplicationModel
   def embed_js_snippet
     <<~HTML.strip
       <div id="dom-servis-partner-form"></div>
-      <script src="#{base_origin}/assets/form/form.js"></script>
       <script>
-        $(function() {
-          $('#dom-servis-partner-form').ZammadForm({
-            lang: 'ru',
-            modal: false,
-            showTitle: true,
-            attachmentSupport: true,
-            request_source_token: #{embed_token.to_json},
-            messageTitle: 'Заявка с сайта партнёра',
-            messageSubmit: 'Отправить заявку',
-            messageThankYou: 'Спасибо. Заявка принята. Номер обращения #%s.',
-            attributes: #{JSON.pretty_generate(partner_form_attributes)}
-          });
-        });
+        (function() {
+          var container = document.getElementById('dom-servis-partner-form');
+          if (!container) {
+            return;
+          }
+
+          var iframe = document.createElement('iframe');
+          iframe.src = #{embed_url.to_json};
+          iframe.title = #{display_name.to_json};
+          iframe.loading = 'lazy';
+          iframe.style.width = '100%';
+          iframe.style.minHeight = '980px';
+          iframe.style.border = '0';
+          iframe.style.overflow = 'hidden';
+          container.appendChild(iframe);
+        })();
       </script>
     HTML
   end
