@@ -52,7 +52,12 @@ class DomServis::RequestSource < ApplicationModel
   end
 
   def embed_url
-    "#{base_origin}/assets/form/dom-servis-partner-embed.html?request_source_token=#{CGI.escape(embed_token)}"
+    query = {
+      request_source_token: embed_token,
+      v:                   embed_cache_bust,
+    }.to_query
+
+    "#{base_origin}/assets/form/dom-servis-partner-embed.html?#{query}"
   end
 
   def embed_snippet
@@ -88,6 +93,10 @@ class DomServis::RequestSource < ApplicationModel
         })();
       </script>
     HTML
+  end
+
+  def embed_cache_bust
+    [Version.get.presence, updated_at&.utc&.to_i].compact.join('-')
   end
 
   def ensure_usable_for_form!(request:)
