@@ -48,6 +48,9 @@ class DomServis::DispatchJob < ApplicationModel
   before_validation :normalize_work_tags
   before_validation :normalize_intake_metadata
   before_validation :sync_lifecycle_timestamps
+  after_commit :notify_dispatch_board_created, on: :create
+  after_commit :notify_dispatch_board_updated, on: :update
+  after_commit :notify_dispatch_board_destroyed, on: :destroy
 
   scope :ordered_recent, -> { order(created_at: :desc, id: :desc) }
   scope :pool_visible, -> { where(status: 'pool', assignee_id: nil) }
@@ -81,6 +84,31 @@ class DomServis::DispatchJob < ApplicationModel
   end
 
   private
+
+  def notify_dispatch_board_created
+    notify_dispatch_board_clients(:create)
+  end
+
+  def notify_dispatch_board_updated
+    notify_dispatch_board_clients(:update)
+  end
+
+  def notify_dispatch_board_destroyed
+    notify_dispatch_board_clients(:destroy)
+  end
+
+  def notify_dispatch_board_clients(event)
+    PushMessages.send(
+      message: {
+        event: "#{self.class.name.gsub('::', '')}:#{event}",
+        data:  {
+          id:         id,
+          updated_at: updated_at,
+        },
+      },
+      type: 'authenticated',
+    )
+  end
 
   def apply_defaults
     self.status = 'pool' if status.blank?
