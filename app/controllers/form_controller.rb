@@ -31,6 +31,7 @@ class FormController < ApplicationController
       name:            request_source.name,
       organization_id: request_source.organization_id,
       transport_kind:   request_source.transport_kind,
+      privacy_policy_url: request_source.privacy_policy_url,
     } if request_source.present?
 
     if authorized?(policy_record, :test?)

@@ -7,6 +7,8 @@ buildRequestSourceAttributes = (persisted) ->
         attribute.skipRendering = true
       when 'allowed_domains'
         attribute.renderTarget = '.js-security-fields'
+      when 'privacy_policy_url'
+        attribute.renderTarget = '.js-security-fields'
       when 'notes'
         attribute.renderTarget = '.js-security-fields'
       when 'rotate_embed_token'

@@ -427,6 +427,7 @@ RSpec.describe 'Form', type: :request do
           transport_kind: 'zammad_form',
           status:         'active',
           allowed_domains: ['partner-a.example.com'],
+          privacy_policy_url: 'https://partner-a.example.com/privacy',
         )
       end
       let(:request_source_b) do
@@ -461,6 +462,7 @@ RSpec.describe 'Form', type: :request do
         post '/api/v1/form_config', params: { fingerprint: fingerprint_a, request_source_token: request_source_a.embed_token }, as: :json
         expect(response).to have_http_status(:ok)
         expect(json_response.dig('request_source', 'partner_key')).to eq('partner-a-form')
+        expect(json_response.dig('request_source', 'privacy_policy_url')).to eq('https://partner-a.example.com/privacy')
       end
 
       it 'creates distinct dispatch jobs for different partner sources' do
@@ -558,6 +560,44 @@ RSpec.describe 'Form', type: :request do
         expect(job.organization_id).to eq(partner_org.id)
         expect(job.intake_payload['request_source_origin']).to eq(partner_origin)
         expect(ticket.preferences.dig('dom_servis_intake', 'request_source_origin')).to eq(partner_origin)
+      end
+
+      it 'accepts the compact partner callback payload used by the iframe form' do
+        post '/api/v1/form_submit', params: {
+          fingerprint: fingerprint_a,
+          request_source_token: request_source_a.embed_token,
+          request_source_origin: 'https://partner-a.example.com',
+          token: token,
+          name: 'Иван',
+          title: 'Заявка на обратный звонок',
+          body: 'Клиент оставил заявку на обратный звонок через сайт партнёра. Имя клиента: Иван. Телефон клиента: +79998884455. Нужно уточнить услугу, адрес, дату и время визита.',
+          dom_servis_client_name: 'Иван',
+          dom_servis_client_phone: '+79998884455',
+          dom_servis_service_type: 'Уточнить у клиента',
+          dom_servis_address: 'Уточнить у клиента',
+          dom_servis_visit_date: '2026-03-23',
+          dom_servis_visit_day: 'mon',
+          dom_servis_visit_time: 'Уточнить у клиента',
+          dom_servis_dispatch_priority: 'medium',
+          dom_servis_description: 'Клиент оставил заявку на обратный звонок через сайт партнёра. Имя клиента: Иван. Телефон клиента: +79998884455. Нужно уточнить услугу, адрес, дату и время визита.',
+          dom_servis_comment: 'Детали услуги, адрес и время нужно уточнить у клиента.',
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response['errors']).to be_falsey
+
+        ticket = Ticket.find(json_response['ticket']['id'])
+        job = DomServis::DispatchJob.find_by(ticket_id: ticket.id)
+
+        expect(job).to be_persisted
+        expect(job.request_source_id).to eq(request_source_a.id)
+        expect(job.organization_id).to eq(partner_org.id)
+        expect(job.service_type).to eq('Уточнить у клиента')
+        expect(job.address).to eq('Уточнить у клиента')
+        expect(job.client_phone).to eq('+79998884455')
+        expect(job.priority).to eq('medium')
+        expect(job.comment).to eq('Детали услуги, адрес и время нужно уточнить у клиента.')
+        expect(ticket.preferences.dig('dom_servis_intake', 'request_source_origin')).to eq('https://partner-a.example.com')
       end
     end
   end

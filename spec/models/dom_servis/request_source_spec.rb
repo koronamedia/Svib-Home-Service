@@ -10,6 +10,7 @@ RSpec.describe DomServis::RequestSource do
         partner_key:    'partner-a',
         transport_kind: 'zammad_form',
         status:         'paused',
+        privacy_policy_url: 'https://partner-a.example.com/privacy',
       )
 
       allow(Version).to receive(:get).and_return('7.1.x-4e27e342.docker')
@@ -18,6 +19,7 @@ RSpec.describe DomServis::RequestSource do
 
       expect(url).to include('request_source_token=')
       expect(url).to include(source.embed_token)
+      expect(url).to include(CGI.escape('https://partner-a.example.com/privacy'))
       expect(url).to include('v=7.1.x-4e27e342.docker')
       expect(source.embed_snippet).to include(CGI.escapeHTML(url))
       expect(source.embed_js_snippet).to include(url)

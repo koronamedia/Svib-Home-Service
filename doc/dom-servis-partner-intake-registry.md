@@ -19,14 +19,18 @@ This note describes the working model for partner intake in Dom-Servis after the
    - `transport_kind = zammad_form`
    - `status = active`
    - `allowed_domains` if the embed should be restricted
+   - `privacy_policy_url` to the partner privacy policy page
 4. Copy the generated `embed_url` or `embed_snippet`.
 5. Place the snippet on the partner site.
 6. The partner site must pass `request_source_token` only; it must not send `organization_id`.
 7. If the embed is rendered in an iframe, forward the parent page origin as `request_source_origin` so allowed-domain checks can validate the real partner site.
+8. The generated iframe already contains the consent text and the partner privacy-policy link.
 
 ## Runtime flow
 
 - Partner site submits a Zammad form.
+- The iframe shows only `name`, `phone`, consent, and optional attachments to the customer.
+- The iframe fills dispatch placeholders such as `service_type`, `address`, and `visit_date` automatically before submit.
 - Zammad creates a `Ticket`.
 - The Dom-Servis intake bridge resolves `request_source_token` to a registry record and, when present, validates `request_source_origin` against the allowed-domain list.
 - The bridge promotes the ticket into a `DispatchJob`.

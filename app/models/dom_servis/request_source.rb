@@ -22,11 +22,14 @@ class DomServis::RequestSource < ApplicationModel
   validates :transport_kind, presence: true, inclusion: { in: TRANSPORT_KINDS }
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :organization, presence: true, if: :active?
+  validates :privacy_policy_url, length: { maximum: 2000 }, allow_blank: true
+  validate :privacy_policy_url_must_be_http_url
 
   before_validation :normalize_partner_key
   before_validation :normalize_transport_kind
   before_validation :normalize_status
   before_validation :normalize_allowed_domains
+  before_validation :normalize_privacy_policy_url
   before_validation :ensure_embed_token
   before_validation :stamp_token_rotation
 
@@ -55,9 +58,10 @@ class DomServis::RequestSource < ApplicationModel
     query = {
       request_source_token: embed_token,
       v:                   embed_cache_bust,
-    }.to_query
+    }
+    query[:privacy_policy_url] = privacy_policy_url if privacy_policy_url.present?
 
-    "#{base_origin}/assets/form/dom-servis-partner-embed.html?#{query}"
+    "#{base_origin}/assets/form/dom-servis-partner-embed.html?#{query.to_query}"
   end
 
   def embed_snippet
@@ -129,6 +133,7 @@ class DomServis::RequestSource < ApplicationModel
       embed_url:              embed_url,
       embed_snippet:          embed_snippet,
       embed_js_snippet:       embed_js_snippet,
+      privacy_policy_url:     privacy_policy_url,
       allowed_domains_display: allowed_domains.join("\n"),
       request_source_type:    transport_kind,
     ).compact
@@ -188,6 +193,10 @@ class DomServis::RequestSource < ApplicationModel
 
   def normalize_allowed_domains
     self.allowed_domains = normalize_domains(allowed_domains)
+  end
+
+  def normalize_privacy_policy_url
+    self.privacy_policy_url = privacy_policy_url.to_s.strip.presence
   end
 
   def normalize_domains(value)
@@ -256,109 +265,14 @@ class DomServis::RequestSource < ApplicationModel
     request&.params&.[](:request_source_origin) || request&.params&.[]('request_source_origin')
   end
 
-  def partner_form_attributes
-    [
-      {
-        display:      'Имя',
-        name:         'name',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-name',
-        required:     true,
-        placeholder:  'Иван Иванов',
-        defaultValue: '',
-      },
-      {
-        display:      'E-mail',
-        name:         'email',
-        tag:          'input',
-        type:         'email',
-        id:           'dom-servis-partner-email',
-        required:     true,
-        placeholder:  'name@example.com',
-        defaultValue: '',
-      },
-      {
-        display:      'Телефон',
-        name:         'dom_servis_client_phone',
-        tag:          'input',
-        type:         'tel',
-        id:           'dom-servis-partner-phone',
-        placeholder:  '+7 999 123-45-67',
-        defaultValue: '',
-      },
-      {
-        display:      'Адрес объекта',
-        name:         'dom_servis_address',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-address',
-        placeholder:  'Новосибирск, ул. Ленина, 10',
-        defaultValue: '',
-      },
-      {
-        display:      'Тип услуги',
-        name:         'dom_servis_service_type',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-service-type',
-        placeholder:  'Сантехника, электрика, бойлер и т.д.',
-        defaultValue: '',
-      },
-      {
-        display:      'Желаемый день',
-        name:         'dom_servis_visit_day',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-visit-day',
-        placeholder:  'понедельник',
-        defaultValue: '',
-      },
-      {
-        display:      'Желаемая дата',
-        name:         'dom_servis_visit_date',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-visit-date',
-        placeholder:  '2026-05-19',
-        defaultValue: '',
-      },
-      {
-        display:      'Желаемое время',
-        name:         'dom_servis_visit_time',
-        tag:          'input',
-        type:         'text',
-        id:           'dom-servis-partner-visit-time',
-        placeholder:  '10:00-12:00',
-        defaultValue: '',
-      },
-      {
-        display:      'Комментарий',
-        name:         'dom_servis_comment',
-        tag:          'textarea',
-        id:           'dom-servis-partner-comment',
-        placeholder:  'Дополнительные комментарии',
-        defaultValue: '',
-        rows:         4,
-      },
-      {
-        display:      'Описание проблемы',
-        name:         'body',
-        tag:          'textarea',
-        id:           'dom-servis-partner-body',
-        required:     true,
-        placeholder:  'Что случилось и что нужно сделать',
-        defaultValue: '',
-        rows:         6,
-      },
-      {
-        display:      'Вложения',
-        name:         'file[]',
-        tag:          'input',
-        type:         'file',
-        id:           'dom-servis-partner-files',
-        repeat:       3,
-      },
-    ]
+  def privacy_policy_url_must_be_http_url
+    return if privacy_policy_url.blank?
+
+    parsed = URI.parse(privacy_policy_url)
+    return if %w[http https].include?(parsed.scheme) && parsed.host.present?
+
+    errors.add(:privacy_policy_url, 'must be a valid http or https URL')
+  rescue URI::InvalidURIError
+    errors.add(:privacy_policy_url, 'must be a valid http or https URL')
   end
 end

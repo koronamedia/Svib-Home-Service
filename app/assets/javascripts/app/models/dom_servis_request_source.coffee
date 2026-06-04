@@ -1,5 +1,5 @@
 class App.DomServisRequestSource extends App.Model
-  @configure 'DomServisRequestSource', 'name', 'partner_key', 'organization_id', 'organization_name', 'transport_kind', 'status', 'allowed_domains', 'notes', 'embed_token', 'embed_url', 'embed_snippet', 'embed_js_snippet', 'request_source_type', 'display_name', 'rotate_embed_token', 'updated_at', 'created_at'
+  @configure 'DomServisRequestSource', 'name', 'partner_key', 'organization_id', 'organization_name', 'transport_kind', 'status', 'allowed_domains', 'privacy_policy_url', 'notes', 'embed_token', 'embed_url', 'embed_snippet', 'embed_js_snippet', 'request_source_type', 'display_name', 'rotate_embed_token', 'updated_at', 'created_at'
   @extend Spine.Model.Ajax
   @url: @apiPath + '/dom_servis/request_sources'
   @configure_attributes = [
@@ -9,6 +9,7 @@ class App.DomServisRequestSource extends App.Model
     { name: 'transport_kind', display: __('Тип канала'), tag: 'select', null: false, translate: false, options: { zammad_form: 'Форма Zammad', webhook: 'Вебхук', ai: 'AI' }, default: 'zammad_form', note: __('Класс входящего транспорта. Сейчас используется форма Zammad, позже сюда можно добавить вебхуки и AI-источники.') }
     { name: 'status', display: __('Статус'), tag: 'select', null: false, translate: false, options: { active: 'Активен', paused: 'Приостановлен' }, default: 'paused', note: __('Активный источник принимает заявки. Приостановленный источник блокирует отправку.') }
     { name: 'allowed_domains', display: __('Разрешённые домены'), tag: 'textarea', rows: 4, limit: 1000, null: true, note: __('Укажите домены сайта партнёра через запятую или с новой строки. Например: partner.ru, www.partner.ru.') }
+    { name: 'privacy_policy_url', display: __('Ссылка на политику конфиденциальности'), tag: 'input', type: 'url', limit: 2000, null: true, note: __('Укажите страницу партнёра с политикой обработки персональных данных. Ссылка появится рядом с чекбоксом согласия в iframe-форме.') }
     { name: 'notes', display: __('Примечание'), tag: 'textarea', rows: 4, limit: 4000, null: true, note: __('Внутренние заметки менеджера: откуда пришёл партнёр, кто согласовал запуск, что проверить перед выдачей кода.') }
     { name: 'embed_token', display: __('Токен встраивания'), tag: 'input', type: 'text', limit: 200, null: false, readonly: 1, skipRendering: 1 }
     { name: 'rotate_embed_token', display: __('Сменить токен встраивания при сохранении'), tag: 'boolean', null: true, default: false, note: __('Создаёт новый токен. Старые ссылки и сниппеты перестанут работать.') }
