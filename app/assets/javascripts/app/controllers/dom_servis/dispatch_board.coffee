@@ -29,6 +29,8 @@ class App.DomServisDispatchBoard extends App.Controller
     'change .js-create-attachment-kind': 'changeCreateAttachmentKind'
     'click .js-save-edit': 'saveEdit'
     'click .js-edit-tag-toggle': 'toggleEditTag'
+    'change .js-assign-assignee': 'setAssignAssignee'
+    'click .js-assign-job': 'assignJob'
     'click .js-take-job': 'takeJob'
     'click .js-release-job': 'releaseJob'
     'click .js-set-status': 'setStatus'
@@ -57,6 +59,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @editSaving = false
     @detailOpen = false
     @detailJobId = null
+    @detailAssignAssigneeId = null
     @organizations = []
     @organizationsLoaded = false
     @attachmentCollections = {}
@@ -292,14 +295,17 @@ class App.DomServisDispatchBoard extends App.Controller
       success: (data) =>
         data ||= {}
         @policyRegistry = data.registry || {}
+        @policySettings = data.settings || {}
         @effectivePolicy =
           role_key: data.role_key
           actions: data.actions || {}
           statuses: data.statuses || {}
           fields: data.fields || {}
+          settings: data.settings || {}
         @render() if !@loading
       error: =>
         @policyRegistry = {}
+        @policySettings = {}
         @effectivePolicy = null
         @render() if !@loading
     )
@@ -459,6 +465,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @editingJobId = null
     @detailOpen = true
     @detailJobId = job.id
+    @detailAssignAssigneeId = if job.assignee_id? then "#{job.assignee_id}" else ''
     @loadAttachments(job.id)
     @render()
 
@@ -466,6 +473,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @preventDefaultAndStopPropagation(e) if e
     @detailOpen = false
     @detailJobId = null
+    @detailAssignAssigneeId = null
     @editOpen = false
     @editingJobId = null
     @editSaving = false
@@ -484,6 +492,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @editingJobId = job.id
     @editOpen = true
     @editSaving = false
+    @detailAssignAssigneeId = if job.assignee_id? then "#{job.assignee_id}" else ''
     @loadAttachments(job.id)
     @render()
 
@@ -753,6 +762,35 @@ class App.DomServisDispatchBoard extends App.Controller
         @editSaving = false
         @formEnable(@$('.js-save-edit'), 'button')
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось сохранить заявку.'), timeout: 6000)
+    )
+
+  setAssignAssignee: (e) =>
+    @detailAssignAssigneeId = $(e.currentTarget).val()
+
+  assignJob: (e) =>
+    @preventDefault(e)
+    return if !@actionAllowed('change_assignee')
+
+    id = $(e.currentTarget).data('id') || @detailJobId
+    assigneeId = @normalizeNumericId(@detailAssignAssigneeId)
+    return if !id
+
+    if !assigneeId
+      @notify(type: 'error', msg: 'Выберите мастера для назначения.', timeout: 4000)
+      return
+
+    @ajax(
+      id: "dom_servis_dispatch_assign_#{id}"
+      type: 'POST'
+      url: "#{@apiPath}/dom_servis/dispatch/jobs/#{id}/assign"
+      data: JSON.stringify(assignee_id: assigneeId)
+      processData: true
+      success: =>
+        @notify(type: 'success', msg: 'Мастер назначен.', timeout: 3000)
+        @loadJobs(manualRefresh: true)
+      error: (xhr) =>
+        @notify(type: 'error', msg: @extractError(xhr, 'Не удалось назначить мастера.'), timeout: 6000)
+        @loadJobs(manualRefresh: true)
     )
 
   takeJob: (e) =>
@@ -1229,6 +1267,7 @@ class App.DomServisDispatchBoard extends App.Controller
     _.map @filteredJobs(), (job) =>
       assigneeName = @resolveAssigneeName(job)
       visitDay = @jobVisitDay(job)
+      deadlineState = @jobDeadlineState(job)
       canOperate = dispatcherAccess || job.assignee_id is currentUserId
 
       card =
@@ -1247,6 +1286,8 @@ class App.DomServisDispatchBoard extends App.Controller
         priorityLabel: @priorityLabel(job.priority)
         status: job.status || 'pool'
         statusLabel: @statusLabel(job.status)
+        deadlineState: deadlineState?.state || null
+        deadlineLabel: deadlineState?.label || null
         assigneeName: assigneeName
         summaryText: @jobSummaryText(job)
         visibleTags: @tagBadgeItems(job.work_tags, 2)
@@ -1304,6 +1345,10 @@ class App.DomServisDispatchBoard extends App.Controller
     tags = @normalizeTags(job.work_tags)
     currentUserId = App.User.current()?.id
     canOperate = @dispatcherAccess() || job.assignee_id is currentUserId
+    deadlineState = @jobDeadlineState(job)
+    assignOptions = @masterAssigneeOptions()
+    canAssign = @dispatcherAccess() && @actionAllowed('change_assignee') && assignOptions.length > 0
+    canTransfer = @dispatcherAccess() && @actionAllowed('transfer_to_partner') && @statusAllowed('transferred_to_partner') && job.status in ['pool', 'taken', 'in_progress']
 
     {
       id: job.id
@@ -1320,12 +1365,18 @@ class App.DomServisDispatchBoard extends App.Controller
       priority: job.priority || 'medium'
       priorityLabel: @priorityLabel(job.priority)
       scheduleLabel: @scheduleLabel(job)
+      deadlineState: deadlineState?.state || null
+      deadlineLabel: deadlineState?.label || null
       assigneeName: @resolveAssigneeName(job)
+      assigneeOptions: assignOptions
+      assignAssigneeId: @detailAssignAssigneeId || if job.assignee_id? then "#{job.assignee_id}" else ''
       visibleTags: @tagBadgeItems(tags, 4)
       hiddenTagsCount: Math.max(tags.length - 4, 0)
       description: job.description || ''
       comment: job.comment || ''
       canEdit: @canOpenEdit(job)
+      canAssign: canAssign
+      canTransfer: canTransfer
       canTake: job.status is 'pool' && @actionAllowed('take_job')
       canRelease: job.assignee_id? && canOperate && @actionAllowed('release_to_pool')
       canStart: canOperate && job.status is 'taken' && @actionAllowed('set_status_in_progress') && @statusAllowed('in_progress')
@@ -2023,6 +2074,53 @@ class App.DomServisDispatchBoard extends App.Controller
   normalizeWhitespace: (value) ->
     "#{value || ''}".replace(/\s+/g, ' ').trim()
 
+  deadlineWarningMinutes: ->
+    minutes = parseInt(@policySettings?.deadline_warning_minutes, 10)
+    return 120 if isNaN(minutes) || minutes <= 0
+    minutes
+
+  jobDeadlineAt: (job) ->
+    return null if !job?.visit_date
+
+    visitDate = @parseDateValue(job.visit_date)
+    return null if !visitDate
+
+    deadline = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate())
+    if job.visit_time? && "#{job.visit_time}".length > 0
+      parts = "#{job.visit_time}".split(':')
+      hours = parseInt(parts[0], 10)
+      minutes = parseInt(parts[1] || '0', 10)
+      return null if isNaN(hours) || isNaN(minutes)
+      deadline.setHours(hours, minutes, 0, 0)
+    else
+      deadline.setHours(23, 59, 59, 999)
+
+    deadline
+
+  jobDeadlineState: (job) ->
+    return null if !job
+    return null if job.status isnt 'pool'
+
+    deadlineAt = @jobDeadlineAt(job)
+    return null if !deadlineAt
+
+    minutesLeft = (deadlineAt.getTime() - new Date().getTime()) / 60000
+    warningMinutes = @deadlineWarningMinutes()
+
+    return { state: 'overdue', label: 'Просрочено', minutesLeft: Math.floor(minutesLeft) } if minutesLeft <= 0
+    return null if minutesLeft > warningMinutes
+
+    { state: 'warning', label: 'Скоро визит', minutesLeft: Math.ceil(minutesLeft) }
+
+  masterAssigneeOptions: ->
+    users = App.User.all() || []
+
+    _.chain(users)
+      .filter((user) -> user?.active isnt false && user.permission('dom_servis.master'))
+      .sortBy((user) -> (user.displayName() || '').toLowerCase())
+      .map((user) -> { id: "#{user.id}", label: user.displayName() || user.login || user.email || "##{user.id}" })
+      .value()
+
   roleLabel: ->
     return 'Владелец/администратор' if @adminAccess()
     return 'Диспетчер' if @dispatcherOnlyAccess()
@@ -2068,7 +2166,7 @@ class App.DomServisDispatchBoard extends App.Controller
       return @actionAllowed('change_priority')
 
     if fieldKey is 'assignee_id'
-      return @actionAllowed('change_assignee')
+      return false
 
     if fieldKey is 'organization_id'
       return true
@@ -2337,6 +2435,7 @@ class App.DomServisDispatchBoard extends App.Controller
       when 'in_progress' then 'В работе'
       when 'done' then 'Готово'
       when 'cancelled' then 'Отменена'
+      when 'transferred_to_partner' then 'Передана партнёру'
       else 'В пуле'
 
   priorityLabel: (priority) ->

@@ -50,6 +50,38 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     model_item_render(job)
   end
 
+  def assign
+    job = dispatch_job_scope.find(params[:id])
+    authorize job, :update?
+    ensure_action_allowed!('change_assignee')
+
+    assignee_id = normalized_assignee_id(params.require(:assignee_id))
+    raise Exceptions::UnprocessableEntity, 'Invalid assignee.' if assignee_id.blank?
+
+    assignee = User.find_by(id: assignee_id)
+    raise Exceptions::UnprocessableEntity, 'Invalid assignee.' if assignee.blank?
+    raise Exceptions::UnprocessableEntity, 'Assignee must be an active user.' if assignee.active == false
+    raise Exceptions::Forbidden, 'Assignee must be a Dom-Servis master.' if !assignee.permissions?('dom_servis.master')
+    raise Exceptions::UnprocessableEntity, 'Cannot assign a finished dispatch job.' if job.status.in?(%w[done cancelled transferred_to_partner])
+
+    previous_assignee_id = job.assignee_id
+
+    job.with_lock do
+      job.update!(
+        assignee_id:   assignee.id,
+        status:        job.status == 'pool' ? 'taken' : job.status,
+        taken_at:      job.taken_at || Time.zone.now,
+        updated_by_id: current_user.id,
+      )
+
+      create_event!(job, 'assigned', from: previous_assignee_id, to: assignee.id)
+    end
+
+    sync_backing_ticket!(job, changes: { 'assigned' => { from: previous_assignee_id, to: assignee.id } })
+
+    model_item_render(job)
+  end
+
   def destroy
     job = dispatch_job_scope.find(params[:id])
     authorize job, :destroy?
@@ -121,6 +153,7 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     ensure_action_allowed!('cancel_job') if status == 'cancelled'
     ensure_action_allowed!('set_status_in_progress') if status == 'in_progress'
     ensure_action_allowed!('set_status_done') if status == 'done'
+    ensure_action_allowed!('transfer_to_partner') if status == 'transferred_to_partner'
     ensure_action_allowed!('reopen_job') if %w[pool taken].include?(status) && job.status.in?(%w[done cancelled])
 
     job.with_lock do
@@ -262,9 +295,6 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
         changes['tags_changed'] = { to: updates[:work_tags] }
       end
 
-      if updates.key?(:assignee_id) && normalized_assignee_id(updates[:assignee_id]) != normalized_assignee_id(job.assignee_id)
-        changes['assignee_changed'] = { from: job.assignee_id, to: updates[:assignee_id] }
-      end
     end
   end
 
@@ -357,7 +387,7 @@ class DomServis::Dispatch::JobsController < DomServis::Dispatch::BaseController
     end
 
     if updates.key?(:assignee_id) && normalized_assignee_id(updates[:assignee_id]) != normalized_assignee_id(job.assignee_id)
-      ensure_action_allowed!('change_assignee')
+      raise Exceptions::Forbidden, 'Dispatch assignee can only be changed through the assign action.'
     end
 
     if updates.key?(:comment) && updates[:comment].to_s != job.comment.to_s

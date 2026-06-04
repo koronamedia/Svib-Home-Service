@@ -52,6 +52,29 @@
     <section class="dom-servis-dispatch-admin__section">
       <div class="dom-servis-dispatch-admin__section-head">
         <div>
+          <h2><%- @T('Deadline warning') %></h2>
+          <p><%- @T('Set how many minutes before the visit deadline a pool job should turn red on the board.') %></p>
+        </div>
+      </div>
+
+      <div class="dom-servis-dispatch-admin__settings-card">
+        <div class="form-group dom-servis-dispatch-admin__setting">
+          <label><%- @T('Minutes before deadline') %></label>
+          <input
+            class="form-control js-policy-setting"
+            type="number"
+            min="1"
+            step="5"
+            data-setting="deadline_warning_minutes"
+            value="<%= @policy.settings.deadline_warning_minutes %>">
+          <p class="dom-servis-dispatch-admin__setting-hint"><%- @T('Recommended default: 120 minutes. Used only for the board highlight, not for status transitions.') %></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="dom-servis-dispatch-admin__section">
+      <div class="dom-servis-dispatch-admin__section-head">
+        <div>
           <h2><%- @T('Dispatch Tags') %></h2>
           <p><%- @T('Dispatch job tags reuse the global Zammad tag namespace. Create new tag names only in Manage > Tags, then dispatchers can assign them on jobs and the same tags will be mirrored into backing tickets.') %></p>
         </div>

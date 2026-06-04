@@ -8,6 +8,7 @@ class DomServisDispatch extends App.ControllerSubContent
     'click .js-save-dispatch-policy': 'savePolicy'
     'click .js-reset-dispatch-policy': 'resetPolicy'
     'change .js-policy-toggle': 'togglePolicy'
+    'change .js-policy-setting': 'updatePolicySetting'
 
   constructor: ->
     super
@@ -28,6 +29,8 @@ class DomServisDispatch extends App.ControllerSubContent
       actions: {}
       statuses: {}
       fields: {}
+      settings:
+        deadline_warning_minutes: 120
 
     @tags = []
     @loading = true
@@ -67,7 +70,7 @@ class DomServisDispatch extends App.ControllerSubContent
         @stats = data?.stats || @stats
         @tags = data?.tags || @tags
         @registry = data?.registry || @registry
-        @policy = data?.policy || @policy
+        @policy = @normalizePolicy(data?.policy || @policy)
         @loading = false
         @saving = false
         @dirty = false
@@ -100,7 +103,7 @@ class DomServisDispatch extends App.ControllerSubContent
       success: (data) =>
         @stats = data?.stats || @stats
         @registry = data?.registry || @registry
-        @policy = data?.policy || @policy
+        @policy = @normalizePolicy(data?.policy || @policy)
         @saving = false
         @dirty = false
         @notify(type: 'success', msg: __('Dispatch policy saved.'), timeout: 3000)
@@ -127,7 +130,7 @@ class DomServisDispatch extends App.ControllerSubContent
       success: (data) =>
         @stats = data?.stats || @stats
         @registry = data?.registry || @registry
-        @policy = data?.policy || @policy
+        @policy = @normalizePolicy(data?.policy || @policy)
         @saving = false
         @dirty = false
         @notify(type: 'success', msg: __('Dispatch policy reset to defaults.'), timeout: 3000)
@@ -165,8 +168,28 @@ class DomServisDispatch extends App.ControllerSubContent
     @dirty = true
     @render()
 
+  updatePolicySetting: (e) =>
+    input = $(e.currentTarget)
+    key = input.data('setting')
+    return if !key
+
+    @policy.settings ?= {}
+    value = parseInt(input.val(), 10)
+    @policy.settings[key] = if isNaN(value) then null else value
+    @dirty = true
+    @render()
+
   openBoard: (e) =>
     @preventDefault(e)
     @navigate '#dom_servis/dispatch'
+
+  normalizePolicy: (policy) =>
+    policy ||= {}
+    policy.actions ?= {}
+    policy.statuses ?= {}
+    policy.fields ?= {}
+    policy.settings ?= {}
+    policy.settings.deadline_warning_minutes ?= 120
+    policy
 
 App.Config.set('DomServisDispatch', { prio: 3600, name: __('Dispatch Admin'), parent: '#manage', target: '#manage/dom_servis_dispatch', controller: DomServisDispatch, permission: ['dom_servis.admin'] }, 'NavBarAdmin')

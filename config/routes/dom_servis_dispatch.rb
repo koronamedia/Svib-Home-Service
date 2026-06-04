@@ -17,6 +17,7 @@ Zammad::Application.routes.draw do
 
           member do
             post :take
+            post :assign
             post :release
             post :status, action: :update_status
             post :move_day

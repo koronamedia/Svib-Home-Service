@@ -5,7 +5,7 @@ class DomServis::DispatchJob < ApplicationModel
 
   self.table_name = 'dom_servis_dispatch_jobs'
 
-  STATUSES   = %w[pool taken in_progress done cancelled].freeze
+  STATUSES   = %w[pool taken in_progress done cancelled transferred_to_partner].freeze
   PRIORITIES = %w[low medium high critical].freeze
   SOURCES    = %w[manual form email webhook ai].freeze
   VISIT_DAYS = %w[mon tue wed thu fri sat sun].freeze

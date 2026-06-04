@@ -118,7 +118,7 @@ class DomServis::Dispatch::BackingTicket::Mapper
       "Client: #{client_line}",
       "Address: #{dispatch_job.address}",
       "Schedule: #{schedule_line}",
-      "Status: #{dispatch_job.status}",
+      "Status: #{status_name(dispatch_job.status)}",
       "Priority: #{dispatch_job.priority}",
       "Assignee: #{assignee_name}",
       "Source: #{dispatch_job.source}",
@@ -135,7 +135,7 @@ class DomServis::Dispatch::BackingTicket::Mapper
     when 'released'
       ['- Returned to shared pool.']
     when 'status_changed'
-      ["- Status: #{value_or_dash(meta['from'] || meta[:from])} -> #{value_or_dash(meta['to'] || meta[:to])}."]
+      ["- Status: #{status_name(meta['from'] || meta[:from])} -> #{status_name(meta['to'] || meta[:to])}."]
     when 'priority_changed'
       ["- Priority: #{value_or_dash(meta['from'] || meta[:from])} -> #{value_or_dash(meta['to'] || meta[:to])}."]
     when 'moved_weekday'
@@ -148,6 +148,8 @@ class DomServis::Dispatch::BackingTicket::Mapper
       ["- Organization: #{organization_name(meta['from'] || meta[:from])} -> #{organization_name(meta['to'] || meta[:to])}."]
     when 'tags_changed'
       ["- Work tags: #{Array(meta['to'] || meta[:to]).join(', ')}."]
+    when 'assigned'
+      ["- Assigned to #{user_name(meta['to'] || meta[:to])}."]
     when 'assignee_changed'
       ["- Assignee: #{user_name(meta['from'] || meta[:from])} -> #{user_name(meta['to'] || meta[:to])}."]
     else
@@ -206,6 +208,25 @@ class DomServis::Dispatch::BackingTicket::Mapper
 
   def value_or_dash(value)
     value.present? ? value : '-'
+  end
+
+  def status_name(value)
+    case value.to_s
+    when 'pool'
+      'Pool'
+    when 'taken'
+      'Taken'
+    when 'in_progress'
+      'In progress'
+    when 'done'
+      'Done'
+    when 'cancelled'
+      'Cancelled'
+    when 'transferred_to_partner'
+      'Transferred to partner'
+    else
+      value_or_dash(value)
+    end
   end
 
   def dom_servis_job_code

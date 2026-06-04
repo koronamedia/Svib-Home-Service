@@ -598,6 +598,23 @@
   border-color: rgba(215, 95, 124, 0.72);
 }
 
+.dom-servis-dispatch-card--transferred_to_partner {
+  border-color: rgba(120, 186, 255, 0.72);
+}
+
+.dom-servis-dispatch-card--deadline-warning {
+  border-color: rgba(255, 160, 98, 0.82);
+  box-shadow: 0 18px 34px rgba(255, 110, 75, 0.14);
+}
+
+.dom-servis-dispatch-card--deadline-overdue {
+  background:
+    linear-gradient(180deg, rgba(54, 16, 21, 0.98), rgba(39, 15, 19, 0.98)),
+    radial-gradient(circle at top right, rgba(255, 117, 117, 0.18), transparent 36%);
+  border-color: rgba(255, 109, 109, 0.94);
+  box-shadow: 0 20px 38px rgba(206, 48, 66, 0.22);
+}
+
 .dom-servis-dispatch-card__topline,
 .dom-servis-dispatch-card__identity,
 .dom-servis-dispatch-card__badge-row,
@@ -666,6 +683,11 @@
   color: #f08aa0;
 }
 
+.dom-servis-dispatch-card__status--transferred_to_partner {
+  background: rgba(120, 186, 255, 0.18);
+  color: #9cc9ff;
+}
+
 .dom-servis-dispatch-card__priority--low {
   background: rgba(58, 205, 145, 0.16);
   color: #63d5a0;
@@ -690,6 +712,23 @@
   background: rgba(255, 255, 255, 0.05);
   color: #c7cfdb;
   text-transform: none;
+}
+
+.dom-servis-dispatch-card__tag--deadline {
+  border-style: solid;
+  border-width: 1px;
+}
+
+.dom-servis-dispatch-card__tag--warning {
+  background: rgba(255, 160, 98, 0.16);
+  border-color: rgba(255, 160, 98, 0.38);
+  color: #ffc28f;
+}
+
+.dom-servis-dispatch-card__tag--overdue {
+  background: rgba(255, 96, 96, 0.18);
+  border-color: rgba(255, 96, 96, 0.44);
+  color: #ffb1b1;
 }
 
 .dom-servis-dispatch-card__title {
@@ -1121,6 +1160,33 @@
   padding: 14px;
 }
 
+.dom-servis-dispatch-drawer__assignment-panel {
+  align-items: flex-end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.dom-servis-dispatch-drawer__assignment-control {
+  margin-bottom: 0;
+}
+
+.dom-servis-dispatch-drawer__assignment-control label {
+  color: #c9cfd8;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-drawer__assignment-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .dom-servis-dispatch-board__empty {
   align-items: center;
   background: rgba(31, 35, 44, 0.84);
@@ -1166,6 +1232,35 @@
   flex-direction: column;
   gap: 10px;
   padding: 22px 24px;
+}
+
+.dom-servis-dispatch-admin__settings-card {
+  background: rgba(27, 31, 40, 0.82);
+  border: 1px solid rgba(79, 86, 104, 0.5);
+  border-radius: 18px;
+  margin-top: 16px;
+  padding: 18px;
+}
+
+.dom-servis-dispatch-admin__setting {
+  margin-bottom: 0;
+}
+
+.dom-servis-dispatch-admin__setting label {
+  color: #c9cfd8;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.dom-servis-dispatch-admin__setting-hint {
+  color: #99a6ba;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 10px 0 0;
 }
 
 .dom-servis-dispatch-admin__section {
@@ -1518,6 +1613,7 @@
   .dom-servis-dispatch-drawer__edit-summary,
   .dom-servis-dispatch-drawer__form-grid,
   .dom-servis-dispatch-card__quick-edit,
+  .dom-servis-dispatch-drawer__assignment-panel,
   .dom-servis-dispatch-modal__columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1535,6 +1631,7 @@
   .dom-servis-dispatch-drawer__edit-summary,
   .dom-servis-dispatch-drawer__form-grid,
   .dom-servis-dispatch-card__quick-edit,
+  .dom-servis-dispatch-drawer__assignment-panel,
   .dom-servis-dispatch-modal__columns {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1559,6 +1656,10 @@
   }
 
   .dom-servis-dispatch-drawer__attachment-actions {
+    justify-content: flex-start;
+  }
+
+  .dom-servis-dispatch-drawer__assignment-actions {
     justify-content: flex-start;
   }
 }
