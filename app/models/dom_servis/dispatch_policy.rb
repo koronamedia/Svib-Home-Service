@@ -56,6 +56,7 @@ class DomServis::DispatchPolicy
         { key: 'set_status_in_progress', label: 'Set in progress',      description: 'Move a job into active execution.' },
         { key: 'set_status_done',       label: 'Set done',              description: 'Mark a job as completed.' },
         { key: 'cancel_job',            label: 'Cancel job',            description: 'Cancel an active or pending job.' },
+        { key: 'transfer_to_partner',   label: 'Transfer to partner',   description: 'Close the job on our board and hand it off to a partner service.' },
         { key: 'reopen_job',            label: 'Reopen job',            description: 'Reopen a completed or cancelled job.' },
       ],
     },
@@ -66,7 +67,7 @@ class DomServis::DispatchPolicy
         { key: 'move_job_day',          label: 'Move job day',          description: 'Move a job to another weekday inside the dispatch board.' },
         { key: 'move_job_week',         label: 'Move job week',         description: 'Move a job across weeks.' },
         { key: 'change_priority',       label: 'Change priority',       description: 'Change the visual and operational priority of a job.' },
-        { key: 'change_assignee',       label: 'Change assignee',       description: 'Assign or reassign a job directly to another worker.' },
+        { key: 'change_assignee',       label: 'Assign master',         description: 'Assign or reassign a job through the dedicated operational action.' },
         { key: 'edit_all_fields',       label: 'Edit all fields',       description: 'Open full payload editing for job data.' },
         { key: 'delete_job',            label: 'Delete job',            description: 'Delete a dispatch job from the board.' },
       ],
@@ -88,6 +89,18 @@ class DomServis::DispatchPolicy
     { key: 'in_progress', label: 'In progress', description: 'Actively being worked on.' },
     { key: 'done',        label: 'Done',        description: 'Completed and closed for the operational workflow.' },
     { key: 'cancelled',   label: 'Cancelled',   description: 'Cancelled before completion.' },
+    { key: 'transferred_to_partner', label: 'Transferred to partner', description: 'Closed on the Dom-Servis board after handoff to a partner service.' },
+  ].freeze
+
+  SETTINGS_REGISTRY = [
+    {
+      key:         'deadline_warning_minutes',
+      label:       'Deadline warning minutes',
+      description: 'How many minutes before the visit deadline a pool job should turn red on the board.',
+      default:     120,
+      min:         1,
+      step:        5,
+    },
   ].freeze
 
   FIELD_METADATA = {
@@ -133,6 +146,7 @@ class DomServis::DispatchPolicy
         action_groups: ACTION_GROUPS,
         statuses:      STATUS_REGISTRY,
         field_groups:  grouped_fields,
+        settings:      SETTINGS_REGISTRY,
       }
     end
 
@@ -172,6 +186,7 @@ class DomServis::DispatchPolicy
             'editable' => role_entry['editable'] == true,
           }
         end,
+        settings: policy['settings'],
       }
     end
 
@@ -272,11 +287,18 @@ class DomServis::DispatchPolicy
       end
     end
 
+    def default_settings
+      SETTINGS_REGISTRY.each_with_object({}) do |setting, memo|
+        memo[setting[:key]] = setting_default(setting[:key])
+      end
+    end
+
     def defaults
       {
         'actions'  => default_actions,
         'statuses' => default_statuses,
         'fields'   => default_fields,
+        'settings' => default_settings,
       }
     end
 
@@ -288,6 +310,7 @@ class DomServis::DispatchPolicy
         'actions'  => normalize_action_matrix(value['actions'], defaults['actions']),
         'statuses' => normalize_action_matrix(value['statuses'], defaults['statuses']),
         'fields'   => normalize_field_matrix(value['fields'], defaults['fields']),
+        'settings' => normalize_settings(value['settings'], defaults['settings']),
       }
     end
 
@@ -335,6 +358,7 @@ class DomServis::DispatchPolicy
           set_status_in_progress
           set_status_done
           cancel_job
+          transfer_to_partner
           reopen_job
           move_job_day
           move_job_week
@@ -354,6 +378,7 @@ class DomServis::DispatchPolicy
           set_status_in_progress
           set_status_done
           cancel_job
+          transfer_to_partner
           reopen_job
           move_job_day
           move_job_week
@@ -373,8 +398,8 @@ class DomServis::DispatchPolicy
     def status_default(status_key, role_key)
       matrix = {
         'master' => %w[in_progress done],
-        'dispatcher' => %w[pool taken in_progress done cancelled],
-        'admin' => %w[pool taken in_progress done cancelled],
+        'dispatcher' => %w[pool taken in_progress done cancelled transferred_to_partner],
+        'admin' => %w[pool taken in_progress done cancelled transferred_to_partner],
       }
 
       matrix.fetch(role_key, []).include?(status_key)
@@ -388,10 +413,38 @@ class DomServis::DispatchPolicy
 
     def field_editable_default(field_key, role_key)
       return false if READ_ONLY_FIELDS.include?(field_key)
-      return false if %w[status assignee_id ticket_id organization_id attachments].include?(field_key) && role_key == 'master'
+      return false if field_key == 'assignee_id'
+      return false if %w[status ticket_id organization_id attachments].include?(field_key) && role_key == 'master'
       return false if role_key == 'master'
 
       true
+    end
+
+    def normalize_settings(raw_settings, default_settings)
+      raw_settings = (raw_settings || {}).deep_stringify_keys
+
+      default_settings.each_with_object({}) do |(key, default_value), memo|
+        memo[key] = normalize_setting_value(key, raw_settings.key?(key) ? raw_settings[key] : default_value)
+      end
+    end
+
+    def normalize_setting_value(key, value)
+      case key
+      when 'deadline_warning_minutes'
+        minutes = value.to_i
+        minutes.positive? ? minutes : setting_default(key)
+      else
+        value
+      end
+    end
+
+    def setting_default(key)
+      case key
+      when 'deadline_warning_minutes'
+        120
+      else
+        nil
+      end
     end
 
     def humanize_field(field_name)

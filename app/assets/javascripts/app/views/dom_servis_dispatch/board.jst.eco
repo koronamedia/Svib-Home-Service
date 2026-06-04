@@ -262,7 +262,7 @@
   <% else: %>
     <div class="dom-servis-dispatch-board__grid">
       <% for job in @jobCards: %>
-        <article class="dom-servis-dispatch-card dom-servis-dispatch-card--<%= job.status %> dom-servis-dispatch-card--<%= job.priority %> js-job-card" data-id="<%= job.id %>">
+        <article class="dom-servis-dispatch-card dom-servis-dispatch-card--<%= job.status %> dom-servis-dispatch-card--<%= job.priority %><%= ' dom-servis-dispatch-card--deadline-warning' if job.deadlineState is 'warning' %><%= ' dom-servis-dispatch-card--deadline-overdue' if job.deadlineState is 'overdue' %> js-job-card" data-id="<%= job.id %>">
           <% if @mobileView: %>
             <div class="dom-servis-dispatch-card__row dom-servis-dispatch-card__row--top">
               <div class="dom-servis-dispatch-card__schedule"><%= job.scheduleLabel %></div>
@@ -303,6 +303,9 @@
 
           <div class="dom-servis-dispatch-card__badge-row">
             <span class="dom-servis-dispatch-card__priority dom-servis-dispatch-card__priority--<%= job.priority %>"><%= job.priorityLabel %></span>
+            <% if job.deadlineLabel: %>
+              <span class="dom-servis-dispatch-card__tag dom-servis-dispatch-card__tag--deadline dom-servis-dispatch-card__tag--<%= job.deadlineState %>"><%= job.deadlineLabel %></span>
+            <% end %>
             <% for tag in job.visibleTags: %>
               <button class="dom-servis-dispatch-card__tag js-no-detail js-tag-filter-toggle<%= ' is-active' if tag.active %>" data-tag="<%= tag.name %>"><%= tag.name %></button>
             <% end %>
@@ -436,6 +439,33 @@
               </section>
             <% end %>
           <% else: %>
+            <% if @detailJob.canAssign || @detailJob.canTransfer: %>
+              <section class="dom-servis-dispatch-drawer__section">
+                <div class="dom-servis-dispatch-drawer__section-title">Операционные действия</div>
+                <div class="dom-servis-dispatch-drawer__assignment-panel">
+                  <% if @detailJob.canAssign: %>
+                    <div class="form-group dom-servis-dispatch-drawer__assignment-control">
+                      <label>Назначить мастера</label>
+                      <select class="form-control js-assign-assignee">
+                        <option value="">Выберите мастера</option>
+                        <% for option in @detailJob.assigneeOptions: %>
+                          <option value="<%= option.id %>"<%= ' selected' if "#{@detailJob.assignAssigneeId}" is "#{option.id}" %>><%= option.label %></option>
+                        <% end %>
+                      </select>
+                    </div>
+                    <div class="dom-servis-dispatch-drawer__assignment-actions">
+                      <button class="btn btn--primary js-assign-job js-no-detail" data-id="<%= @detailJob.id %>">Назначить</button>
+                    </div>
+                  <% end %>
+                  <% if @detailJob.canTransfer: %>
+                    <div class="dom-servis-dispatch-drawer__assignment-actions">
+                      <button class="btn btn--danger js-set-status js-no-detail" data-id="<%= @detailJob.id %>" data-status="transferred_to_partner">Передать партнёру</button>
+                    </div>
+                  <% end %>
+                </div>
+              </section>
+            <% end %>
+
             <% for group in @detailGroups: %>
               <section class="dom-servis-dispatch-drawer__section">
                 <div class="dom-servis-dispatch-drawer__section-title"><%= group.label %></div>

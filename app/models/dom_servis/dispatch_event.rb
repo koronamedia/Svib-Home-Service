@@ -8,6 +8,7 @@ class DomServis::DispatchEvent < ApplicationModel
     published
     taken
     released
+    assigned
     assignee_changed
     status_changed
     moved_weekday
