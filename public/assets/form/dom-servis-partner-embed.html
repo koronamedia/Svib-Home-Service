@@ -42,16 +42,18 @@
     }
 
     body {
-      padding: 18px 14px;
+      padding: clamp(12px, 1.3vw, 24px);
+      overflow-x: hidden;
     }
 
     .page {
-      width: min(680px, 100%);
+      width: min(920px, 100%);
       margin: 0 auto;
     }
 
     .shell {
       position: relative;
+      width: 100%;
       overflow: hidden;
       padding: clamp(28px, 4vw, 46px);
       border-radius: var(--radius);
@@ -93,7 +95,7 @@
     h1 {
       margin: 0;
       font-family: var(--font-head);
-      font-size: clamp(44px, 6vw, 60px);
+      font-size: 58px;
       line-height: 0.95;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -124,7 +126,7 @@
     .loading {
       display: grid;
       place-items: center;
-      min-height: 280px;
+      min-height: 240px;
       text-align: center;
       color: rgba(255, 255, 255, 0.84);
     }
@@ -142,6 +144,12 @@
     .form {
       margin-top: 28px;
       display: grid;
+      gap: 18px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 18px;
     }
 
@@ -355,7 +363,7 @@
     .success h2 {
       margin: 0;
       font-family: var(--font-head);
-      font-size: clamp(30px, 4vw, 40px);
+      font-size: 38px;
       font-weight: 800;
       line-height: 1;
     }
@@ -376,35 +384,121 @@
       }
     }
 
+    @media (max-width: 900px) {
+      .page {
+        width: 100%;
+      }
+
+      .shell {
+        padding: 24px 20px;
+      }
+
+      h1 {
+        font-size: 52px;
+      }
+
+      .success h2 {
+        font-size: 32px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 640px) {
       body {
         padding: 12px;
       }
 
       .shell {
-        padding: 24px 18px;
+        padding: 16px 14px;
         border-radius: 24px;
       }
 
       h1 {
-        font-size: 40px;
+        font-size: 34px;
+      }
+
+      .lead {
+        margin-top: 10px;
+        font-size: 15px;
+      }
+
+      .form {
+        margin-top: 18px;
+        gap: 14px;
+      }
+
+      .field {
+        gap: 6px;
       }
 
       .field input[type="text"],
-      .field input[type="tel"],
-      .submit {
-        min-height: 64px;
-        font-size: 20px;
+      .field input[type="tel"] {
+        min-height: 60px;
+        font-size: 18px;
       }
 
       .phone-field {
-        grid-template-columns: 88px minmax(0, 1fr);
+        grid-template-columns: 86px minmax(0, 1fr);
+        min-height: 60px;
       }
 
       .phone-field__prefix {
         gap: 8px;
         padding: 0 12px 0 14px;
-        font-size: 15px;
+        font-size: 14px;
+      }
+
+      .phone-field__flag {
+        width: 24px;
+        height: 16px;
+      }
+
+      .phone-field input {
+        min-height: 60px;
+        padding: 0 18px 0 14px;
+      }
+
+      .submit {
+        min-height: 58px;
+        font-size: 18px;
+      }
+
+      .fineprint,
+      .field-error,
+      .checkbox {
+        font-size: 12px;
+      }
+
+      .checkbox {
+        gap: 10px;
+      }
+
+      .checkbox input {
+        width: 22px;
+        height: 22px;
+      }
+
+      .checkbox__copy {
+        line-height: 1.25;
+      }
+
+      .success h2 {
+        font-size: 28px;
+      }
+
+      .fineprint {
+        display: none;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .shell {
+        padding: 48px;
       }
     }
   </style>
@@ -446,11 +540,19 @@
         : 'https://master.svib-dom-service.ru';
 
       const refs = {
+        page: document.querySelector('.page'),
         banner: document.getElementById('banner'),
         loading: document.getElementById('loading'),
         formHost: document.getElementById('formHost'),
         successHost: document.getElementById('successHost'),
       };
+
+      const RESIZE_MESSAGE_TYPE = 'dom-servis:resize';
+      const RESIZE_MIN_HEIGHT = 480;
+      const RESIZE_FALLBACK_HEIGHT = 640;
+      let resizeFrameId = null;
+      let lastPostedHeight = 0;
+      const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => scheduleResize()) : null;
 
       function ensureFingerprint() {
         const storageKey = 'dom-servis-partner-fingerprint';
@@ -553,15 +655,53 @@
       function setBanner(message) {
         refs.banner.className = 'banner banner--error';
         refs.banner.textContent = message;
+        scheduleResize();
       }
 
       function hideBanner() {
         refs.banner.className = 'banner';
         refs.banner.textContent = '';
+        scheduleResize();
       }
 
       function setLoading(isLoading) {
         refs.loading.classList.toggle('hidden', !isLoading);
+        scheduleResize();
+      }
+
+      function measureHeight() {
+        const elements = [
+          document.body,
+          document.documentElement,
+          refs.page,
+          refs.loading,
+          refs.formHost,
+          refs.successHost,
+        ].filter(Boolean);
+
+        const height = elements.reduce((max, element) => {
+          return Math.max(max, element.scrollHeight || 0, element.offsetHeight || 0, element.clientHeight || 0);
+        }, 0);
+
+        return Math.max(RESIZE_MIN_HEIGHT, Math.ceil(height + 2));
+      }
+
+      function postHeight(height) {
+        if (!window.parent || window.parent === window) return;
+        window.parent.postMessage({ type: RESIZE_MESSAGE_TYPE, height }, '*');
+      }
+
+      function scheduleResize() {
+        if (resizeFrameId) return;
+
+        resizeFrameId = window.requestAnimationFrame(() => {
+          resizeFrameId = null;
+          const nextHeight = measureHeight();
+          if (nextHeight === lastPostedHeight) return;
+
+          lastPostedHeight = nextHeight;
+          postHeight(nextHeight);
+        });
       }
 
       function setFieldError(field, message) {
@@ -575,6 +715,7 @@
             if (wrapper) wrapper.classList.toggle('is-invalid', Boolean(message));
           }
         }
+        scheduleResize();
       }
 
       function clearFieldErrors() {
@@ -587,6 +728,7 @@
         document.querySelectorAll('.phone-field.is-invalid').forEach((element) => {
           element.classList.remove('is-invalid');
         });
+        scheduleResize();
       }
 
       function humanizeServerError(field, message) {
@@ -616,6 +758,8 @@
           const target = document.querySelector(`[name="${firstField}"]`);
           if (target && target.focus) target.focus({ preventScroll: false });
         }
+
+        scheduleResize();
       }
 
       function submitDescription(name, phone) {
@@ -641,22 +785,24 @@
         form.className = 'form';
         form.noValidate = true;
         form.innerHTML = `
-          <div class="field">
-            <label for="name">Имя</label>
-            <input id="name" name="name" type="text" autocomplete="name" placeholder="Имя">
-            <div class="field-error" data-error-for="name"></div>
-          </div>
-
-          <div class="field">
-            <label for="dom_servis_client_phone">Телефон</label>
-            <div class="phone-field">
-              <div class="phone-field__prefix" aria-hidden="true">
-                <span class="phone-field__flag"></span>
-                <span>+7</span>
-              </div>
-              <input id="dom_servis_client_phone" name="dom_servis_client_phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(900) 000-00-00">
+          <div class="contact-grid">
+            <div class="field">
+              <label for="name">Имя</label>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Имя">
+              <div class="field-error" data-error-for="name"></div>
             </div>
-            <div class="field-error" data-error-for="dom_servis_client_phone"></div>
+
+            <div class="field">
+              <label for="dom_servis_client_phone">Телефон</label>
+              <div class="phone-field">
+                <div class="phone-field__prefix" aria-hidden="true">
+                  <span class="phone-field__flag"></span>
+                  <span>+7</span>
+                </div>
+                <input id="dom_servis_client_phone" name="dom_servis_client_phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(900) 000-00-00">
+              </div>
+              <div class="field-error" data-error-for="dom_servis_client_phone"></div>
+            </div>
           </div>
 
           <div class="checkbox">
@@ -788,6 +934,7 @@
         refs.formHost.innerHTML = '';
         refs.formHost.appendChild(form);
         refs.formHost.classList.remove('hidden');
+        scheduleResize();
       }
 
       function showSuccess(ticketNumber) {
@@ -800,6 +947,7 @@
           </div>
         `;
         refs.successHost.classList.remove('hidden');
+        scheduleResize();
       }
 
       async function bootstrap() {
@@ -839,11 +987,23 @@
           showForm(form);
           setLoading(false);
           hideBanner();
+          scheduleResize();
         } catch (error) {
           setBanner(error.message || 'Не удалось загрузить форму.');
           setLoading(false);
         }
       }
+
+      if (resizeObserver) {
+        [document.body, refs.page, refs.loading, refs.formHost, refs.successHost, refs.banner].forEach((element) => {
+          if (element) resizeObserver.observe(element);
+        });
+      }
+
+      window.addEventListener('resize', scheduleResize);
+      window.addEventListener('orientationchange', scheduleResize);
+      window.addEventListener('load', scheduleResize);
+      scheduleResize();
 
       bootstrap();
     })();

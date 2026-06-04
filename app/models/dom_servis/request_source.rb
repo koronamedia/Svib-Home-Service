@@ -67,11 +67,14 @@ class DomServis::RequestSource < ApplicationModel
   def embed_snippet
     <<~HTML.strip
       <iframe
+        data-dom-servis-partner-embed="true"
         src="#{ERB::Util.html_escape(embed_url)}"
         title="#{ERB::Util.html_escape(display_name)}"
         loading="lazy"
-        style="width: 100%; min-height: 980px; border: 0; overflow: hidden;"
+        scrolling="no"
+        style="display: block; width: 100%; height: 640px; min-height: 640px; border: 0; overflow: hidden;"
       ></iframe>
+      #{partner_embed_resize_listener_script}
     HTML
   end
 
@@ -86,14 +89,52 @@ class DomServis::RequestSource < ApplicationModel
           }
 
           var iframe = document.createElement('iframe');
+          iframe.setAttribute('data-dom-servis-partner-embed', 'true');
           iframe.src = #{embed_url.to_json};
           iframe.title = #{display_name.to_json};
           iframe.loading = 'lazy';
+          iframe.scrolling = 'no';
+          iframe.style.display = 'block';
           iframe.style.width = '100%';
-          iframe.style.minHeight = '980px';
+          iframe.style.height = '640px';
+          iframe.style.minHeight = '640px';
           iframe.style.border = '0';
           iframe.style.overflow = 'hidden';
           container.appendChild(iframe);
+
+          var origin;
+          try {
+            origin = new URL(iframe.src, window.location.href).origin;
+          } catch (error) {
+            origin = #{base_origin.to_json};
+          }
+
+          var fallbackHeight = 640;
+          var minHeight = 480;
+
+          function applyHeight(height) {
+            var nextHeight = Math.max(minHeight, Math.ceil(Number(height) || 0));
+            iframe.style.height = nextHeight + 'px';
+          }
+
+          applyHeight(fallbackHeight);
+
+          iframe.addEventListener('load', function() {
+            applyHeight(fallbackHeight);
+          });
+
+          window.addEventListener('message', function(event) {
+            if (event.origin !== origin) {
+              return;
+            }
+
+            var data = event.data || {};
+            if (data.type !== 'dom-servis:resize') {
+              return;
+            }
+
+            applyHeight(data.height);
+          });
         })();
       </script>
     HTML
@@ -248,6 +289,59 @@ class DomServis::RequestSource < ApplicationModel
     fqdn = Setting.get('fqdn')
 
     "#{http_type}://#{fqdn}"
+  end
+
+  def partner_embed_resize_listener_script
+    <<~HTML.strip
+      <script>
+        (function() {
+          var iframe = null;
+          if (document.currentScript && document.currentScript.previousElementSibling && document.currentScript.previousElementSibling.matches('iframe[data-dom-servis-partner-embed="true"]')) {
+            iframe = document.currentScript.previousElementSibling;
+          } else {
+            iframe = document.querySelector('iframe[data-dom-servis-partner-embed="true"]');
+          }
+
+          if (!iframe) {
+            return;
+          }
+
+          var origin;
+          try {
+            origin = new URL(iframe.src, window.location.href).origin;
+          } catch (error) {
+            origin = #{base_origin.to_json};
+          }
+
+          var fallbackHeight = 640;
+          var minHeight = 480;
+
+          function applyHeight(height) {
+            var nextHeight = Math.max(minHeight, Math.ceil(Number(height) || 0));
+            iframe.style.height = nextHeight + 'px';
+          }
+
+          applyHeight(fallbackHeight);
+
+          iframe.addEventListener('load', function() {
+            applyHeight(fallbackHeight);
+          });
+
+          window.addEventListener('message', function(event) {
+            if (event.origin !== origin) {
+              return;
+            }
+
+            var data = event.data || {};
+            if (data.type !== 'dom-servis:resize') {
+              return;
+            }
+
+            applyHeight(data.height);
+          });
+        })();
+      </script>
+    HTML
   end
 
   def request_origin_host(request)
