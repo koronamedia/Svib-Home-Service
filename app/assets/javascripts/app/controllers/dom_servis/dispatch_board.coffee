@@ -67,9 +67,12 @@ class App.DomServisDispatchBoard extends App.Controller
     @createAttachmentUploading = false
     @createAttachmentKind = 'intake_attachment'
     @mobileWorkspaceMenuOpen = false
+    @pendingRealtimeRefresh = false
+    @realtimeRefreshDelayId = null
     @initViewportMode()
     @statusFilter = 'mine' if @mobileView && @masterAccess()
     @bindRouteWatcher()
+    @bindDispatchBoardRealtimeRefresh()
     @resetCreateDraft()
 
     @render()
@@ -221,7 +224,13 @@ class App.DomServisDispatchBoard extends App.Controller
 
     @navigate(target)
 
-  loadJobs: =>
+  loadJobs: (options = {}) =>
+    if options.manualRefresh
+      @pendingRealtimeRefresh = false
+      if @realtimeRefreshDelayId
+        @clearDelay(@realtimeRefreshDelayId)
+        @realtimeRefreshDelayId = null
+
     @loading = true
     @errorMessage = null
     @render()
@@ -240,12 +249,40 @@ class App.DomServisDispatchBoard extends App.Controller
         @jobs = @sortJobs(data || [])
         @loading = false
         @render()
+        @flushPendingRealtimeRefresh()
       error: (xhr) =>
         @jobs = []
         @loading = false
         @errorMessage = @extractError(xhr, 'Не удалось загрузить заявки диспетчеризации.')
         @render()
+        @flushPendingRealtimeRefresh()
     )
+
+  bindDispatchBoardRealtimeRefresh: ->
+    @controllerBind('DomServisDispatchJob:create DomServisDispatchJob:update DomServisDispatchJob:destroy DomServisDispatchJob:touch', =>
+      @scheduleRealtimeRefresh()
+    )
+
+  scheduleRealtimeRefresh: =>
+    @pendingRealtimeRefresh = true
+    return if @createOpen || @editOpen
+    return if @loading
+
+    @realtimeRefreshDelayId = @delay(@performRealtimeRefresh, 1200, 'dom_servis_dispatch_jobs_realtime_refresh')
+
+  performRealtimeRefresh: =>
+    @realtimeRefreshDelayId = null
+    return if @createOpen || @editOpen
+
+    @pendingRealtimeRefresh = false
+    @loadJobs(manualRefresh: true)
+
+  flushPendingRealtimeRefresh: =>
+    return if !@pendingRealtimeRefresh
+    return if @createOpen || @editOpen
+    return if @loading
+
+    @scheduleRealtimeRefresh()
 
   loadEffectivePolicy: =>
     @ajax(
@@ -340,7 +377,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @preventDefault(e)
     @loadEffectivePolicy()
     @loadTags()
-    @loadJobs()
+    @loadJobs(manualRefresh: true)
 
   setStatusFilter: (e) =>
     @preventDefault(e)
@@ -408,6 +445,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @resetCreateDraft()
     @resetCreateAttachmentDraft()
     @render()
+    @flushPendingRealtimeRefresh()
 
   openDetailFromCard: (e) =>
     return if $(e.target).closest('.js-no-detail').length > 0
@@ -455,6 +493,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @editingJobId = null
     @editSaving = false
     @render()
+    @flushPendingRealtimeRefresh()
 
   createJob: (e) =>
     e.preventDefault()
@@ -498,7 +537,7 @@ class App.DomServisDispatchBoard extends App.Controller
         ui.createOpen = false
         ui.dayFilter = payload.visit_day || 'all'
         ui.selectedWeekStart = ui.startOfWeek(ui.parseDateValue(payload.visit_date) || new Date())
-        ui.loadJobs()
+        ui.loadJobs(manualRefresh: true)
       fail: (settings, details) ->
         ui.formEnable(ui.$('.js-create-job'), 'button')
         ui.notify(
@@ -522,7 +561,7 @@ class App.DomServisDispatchBoard extends App.Controller
       @resetCreateAttachmentDraft()
       @dayFilter = payload.visit_day || 'all'
       @selectedWeekStart = @startOfWeek(@parseDateValue(payload.visit_date) || new Date())
-      @loadJobs()
+      @loadJobs(manualRefresh: true)
 
     finalizePartialFailure = =>
       @notify(
@@ -535,7 +574,7 @@ class App.DomServisDispatchBoard extends App.Controller
       @resetCreateAttachmentDraft()
       @dayFilter = payload.visit_day || 'all'
       @selectedWeekStart = @startOfWeek(@parseDateValue(payload.visit_date) || new Date())
-      @loadJobs()
+      @loadJobs(manualRefresh: true)
 
     if @createAttachmentFiles.length < 1
       finalizeSuccess()
@@ -709,7 +748,7 @@ class App.DomServisDispatchBoard extends App.Controller
         @editOpen = false
         @editingJobId = null
         @editSaving = false
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @editSaving = false
         @formEnable(@$('.js-save-edit'), 'button')
@@ -728,10 +767,10 @@ class App.DomServisDispatchBoard extends App.Controller
       url: "#{@apiPath}/dom_servis/dispatch/jobs/#{id}/take"
       success: =>
         @notify(type: 'success', msg: 'Заявка взята в работу.', timeout: 3000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось взять заявку.'), timeout: 6000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
     )
 
   releaseJob: (e) =>
@@ -746,10 +785,10 @@ class App.DomServisDispatchBoard extends App.Controller
       url: "#{@apiPath}/dom_servis/dispatch/jobs/#{id}/release"
       success: =>
         @notify(type: 'success', msg: 'Заявка возвращена в пул.', timeout: 3000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось вернуть заявку в пул.'), timeout: 6000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
     )
 
   setStatus: (e) =>
@@ -767,10 +806,10 @@ class App.DomServisDispatchBoard extends App.Controller
       processData: true
       success: =>
         @notify(type: 'success', msg: "Статус обновлён: #{@statusLabel(status)}.", timeout: 3000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось обновить статус.'), timeout: 6000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
     )
 
   changePriority: (e) =>
@@ -787,10 +826,10 @@ class App.DomServisDispatchBoard extends App.Controller
       processData: true
       success: =>
         @notify(type: 'success', msg: 'Приоритет обновлён.', timeout: 3000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось обновить приоритет.'), timeout: 6000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
     )
 
   changeVisitDay: (e) =>
@@ -810,10 +849,10 @@ class App.DomServisDispatchBoard extends App.Controller
       processData: true
       success: =>
         @notify(type: 'success', msg: "Заявка перенесена на #{@weekdayLabel(visitDay)}.", timeout: 3000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
       error: (xhr) =>
         @notify(type: 'error', msg: @extractError(xhr, 'Не удалось перенести заявку.'), timeout: 6000)
-        @loadJobs()
+        @loadJobs(manualRefresh: true)
     )
 
   createPayload: ->
