@@ -39,6 +39,8 @@ class App.DomServisDispatchBoard extends App.Controller
     'click .js-remove-attachment': 'removeAttachment'
     'change .js-change-priority': 'changePriority'
     'change .js-change-visit-day': 'changeVisitDay'
+    'click .js-enable-push': 'enablePushNotifications'
+    'click .js-test-push': 'testPushNotification'
 
   constructor: ->
     super
@@ -72,6 +74,9 @@ class App.DomServisDispatchBoard extends App.Controller
     @mobileWorkspaceMenuOpen = false
     @pendingRealtimeRefresh = false
     @realtimeRefreshDelayId = null
+    @pushSubscribing = false
+    @pushTesting = false
+    @pushEnabled = Notification?.permission is 'granted' && @pushSupported()
     @initViewportMode()
     @statusFilter = 'mine' if @mobileView && @masterAccess()
     @bindRouteWatcher()
@@ -123,6 +128,10 @@ class App.DomServisDispatchBoard extends App.Controller
       activeFilterSummary: @buildActiveFilterSummary()
       emptyState: @buildEmptyState()
       canCreateJob: @canCreatePublishedJob()
+      pushSupported: @pushSupported() && @vapidPublicKey()
+      pushEnabled: @pushEnabled
+      pushSubscribing: @pushSubscribing
+      pushTesting: @pushTesting
       createDraft: @createDraft
       createAttachmentKinds: @createAttachmentKindOptions()
       createAttachmentKind: @createAttachmentKind
@@ -2481,6 +2490,119 @@ class App.DomServisDispatchBoard extends App.Controller
       when 'webhook' then 'Webhook / API'
       when 'ai' then 'AI / разбор'
       else 'Вручную'
+
+  # ---------------------------------------------------------------------
+  # Web Push subscription
+  # ---------------------------------------------------------------------
+
+  # Returns true if the current browser environment can use Web Push
+  # (service worker + Push API + Notification API present).
+  pushSupported: =>
+    return 'serviceWorker' of navigator && 'PushManager' of window && 'Notification' of window
+
+  # Returns the VAPID public key the server uses to identify itself to
+  # the push service. Exposed to the frontend via a meta tag rendered by
+  # the dispatch board layout (set by the admin through Settings).
+  vapidPublicKey: =>
+    return document.querySelector('meta[name="dom-servis-vapid-public-key"]')?.content
+
+  # Request notification permission, subscribe the dispatch service worker
+  # to the push service, and persist the subscription on the backend.
+  enablePushNotifications: (e) =>
+    e?.preventDefault()
+
+    return if !@pushSupported()
+    return if @pushSubscribing
+
+    if !@vapidPublicKey()
+      @notifyPushError('Push-уведомления не настроены администратором (нет VAPID ключа).')
+      return
+
+    @pushSubscribing = true
+    @render()
+
+    try
+      permission = await Notification.requestPermission()
+
+      if permission != 'granted'
+        @pushSubscribing = false
+        @render()
+        return
+
+      registration = await navigator.serviceWorker.ready
+      subscription = await registration.pushManager.subscribe(
+        userVisibleOnly: true
+        applicationServerKey: @urlBase64ToUint8Array(@vapidPublicKey())
+      )
+
+      await @persistPushSubscription(subscription)
+
+      @pushEnabled = true
+      @pushSubscribing = false
+      @render()
+    catch error
+      @pushSubscribing = false
+      @render()
+      @notifyPushError('Не удалось включить push-уведомления.')
+
+  # Send the browser-generated PushSubscription to the backend.
+  persistPushSubscription: (subscription) =>
+    payload = subscription.toJSON()
+
+    return new Promise (resolve, reject) =>
+      @ajax(
+        id:      'dom_servis_push_subscribe'
+        type:    'POST'
+        url:     "#{@apiPath}/dom_servis/dispatch/push_subscriptions"
+        data:    JSON.stringify(payload)
+        processData: true
+        success: resolve
+        error:   (xhr) => reject(new Error(@extractError(xhr, 'Не удалось сохранить подписку.')))
+      )
+
+  # Sends a test push to all of the current user's subscriptions, so they
+  # can confirm the channel works end-to-end after enabling it.
+  testPushNotification: (e) =>
+    e?.preventDefault()
+    return if @pushTesting
+
+    @pushTesting = true
+    @render()
+
+    @ajax(
+      id:    'dom_servis_push_test'
+      type:  'POST'
+      url:   "#{@apiPath}/dom_servis/dispatch/push_subscriptions/test"
+      success: =>
+        @pushTesting = false
+        @render()
+      error: (xhr) =>
+        @pushTesting = false
+        @render()
+        @notifyPushError(@extractError(xhr, 'Тестовый пуш не отправлен.'))
+    )
+
+  # Decode a base64url VAPID public key into a Uint8Array suitable for
+  # `pushManager.subscribe({ applicationServerKey })`.
+  urlBase64ToUint8Array: (base64String) ->
+    padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+    base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+
+    rawData = window.atob(base64)
+    outputArray = new Uint8Array(rawData.length)
+
+    i = 0
+    while i < rawData.length
+      outputArray[i] = rawData.charCodeAt(i)
+      i++
+
+    outputArray
+
+  notifyPushError: (message) ->
+    App.Toast.create
+      type:    'error'
+      message: message
+      timeout: 4000
 
 class DomServisDispatchBoardRouter extends App.ControllerPermanent
   @requiredPermission: ['dom_servis.admin', 'dom_servis.dispatcher', 'dom_servis.master']

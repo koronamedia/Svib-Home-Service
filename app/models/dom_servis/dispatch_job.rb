@@ -51,6 +51,11 @@ class DomServis::DispatchJob < ApplicationModel
   after_commit :notify_dispatch_board_created, on: :create
   after_commit :notify_dispatch_board_updated, on: :update
   after_commit :notify_dispatch_board_destroyed, on: :destroy
+  # Push notifications (in-app bell + Web Push) on top of the realtime
+  # WebSocket board refresh. Kept separate so a failing push delivery
+  # never blocks the board itself.
+  after_commit :notify_recipients_on_create, on: :create
+  after_commit :notify_recipients_on_assignment, on: :update
 
   scope :ordered_recent, -> { order(created_at: :desc, id: :desc) }
   scope :pool_visible, -> { where(status: 'pool', assignee_id: nil) }
@@ -108,6 +113,61 @@ class DomServis::DispatchJob < ApplicationModel
       },
       type: 'authenticated',
     )
+  end
+
+  def notify_recipients_on_create
+    return if status != 'pool'
+
+    recipients = DomServis::Notifications::Dispatcher
+      .recipients_for_permissions('dom_servis.master')
+
+    DomServis::Notifications::Dispatcher.new(
+      job:        self,
+      event_type: :new_pool_job,
+      recipients: recipients,
+      actor:      created_by,
+    ).deliver
+
+    schedule_pool_escalation
+  end
+
+  def notify_recipients_on_assignment
+    # Assignment path: a master took / was assigned a pool job.
+    if saved_change_to_assignee_id? && assignee_id.present? && assignee.present?
+      DomServis::Notifications::Dispatcher.new(
+        job:        self,
+        event_type: :assigned_to_you,
+        recipients: [assignee],
+        actor:      updated_by,
+      ).deliver
+    end
+
+    # Released back to the pool: notify masters again.
+    return if status != 'pool' || saved_change_to_status.blank?
+    return if saved_change_to_status[1] != 'pool'
+
+    recipients = DomServis::Notifications::Dispatcher
+      .recipients_for_permissions('dom_servis.master')
+
+    DomServis::Notifications::Dispatcher.new(
+      job:        self,
+      event_type: :job_released,
+      recipients: recipients,
+      actor:      updated_by,
+    ).deliver
+  end
+
+  # Schedules a delayed escalation job that fires if this dispatch job
+  # is still unclaimed in the pool after `deadline_warning_minutes`.
+  def schedule_pool_escalation
+    delay = DomServis::DispatchPolicy.current.dig('settings', 'deadline_warning_minutes').to_i
+    delay = 120 if delay <= 0
+
+    DomServis::DispatchEscalationJob
+      .set(wait: delay.minutes)
+      .perform_later(id)
+  rescue => e
+    Rails.logger.warn("[dom_servis.escalation] schedule failed for job=#{id}: #{e.class}: #{e.message}")
   end
 
   def apply_defaults
