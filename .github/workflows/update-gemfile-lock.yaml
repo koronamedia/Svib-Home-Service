@@ -45,7 +45,10 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
+          # NOTE: do NOT use `set -u` here — /etc/profile.d/rvm.sh
+          # references unbound variables (rvm_path) on first load and
+          # will abort under nounset.
           # shellcheck disable=SC1091
           source /etc/profile.d/rvm.sh
 
@@ -67,7 +70,7 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           if git diff --quiet -- Gemfile.lock; then
             echo "Gemfile.lock is already up to date. Nothing to commit."
             exit 0
