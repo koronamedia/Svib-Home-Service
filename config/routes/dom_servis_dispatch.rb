@@ -27,6 +27,11 @@ Zammad::Application.routes.draw do
           resources :events, only: %i[index]
           resources :attachments, only: %i[index show create destroy], controller: :attachments
         end
+
+        # Web Push subscription management for the dispatch board PWA.
+        resources :push_subscriptions, only: %i[create destroy], controller: :push_subscriptions do
+          collection { post :test }
+        end
       end
     end
   end

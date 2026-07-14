@@ -156,6 +156,17 @@
       <% end %>
       <div class="dom-servis-dispatch-board__role"><span>Роль</span><strong><%= @roleLabel %></strong></div>
       <div class="dom-servis-dispatch-board__header-actions">
+        <% if @pushSupported: %>
+          <% if !@pushEnabled: %>
+            <button class="btn js-enable-push" <% if @pushSubscribing: %>disabled<% end %>>
+              <% if @pushSubscribing: %>Включение…<% else %>Уведомления<% end %>
+            </button>
+          <% else: %>
+            <button class="btn btn--text js-test-push" <% if @pushTesting: %>disabled<% end %>>
+              <% if @pushTesting: %>Отправка…<% else %>Тест пуша<% end %>
+            </button>
+          <% end %>
+        <% end %>
         <button class="btn js-refresh-jobs">Обновить</button>
         <% if @canCreateJob: %>
           <button class="btn btn--success js-open-create">Новая заявка</button>

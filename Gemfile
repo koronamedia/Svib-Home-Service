@@ -208,6 +208,12 @@ gem 'twitter_cldr'
 # AI integration
 gem 'elasticsearch', '>=8.11', '<10.0', require: false
 
+# Dom-Servis - Web Push notifications for the dispatch board PWA.
+# Provides VAPID key generation, JWT signing and RFC 8291 encrypted
+# payload delivery to browser push services (FCM for Chrome/Android,
+# Apple Push Notification service for Safari/iOS PWA).
+gem 'web-push'
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
