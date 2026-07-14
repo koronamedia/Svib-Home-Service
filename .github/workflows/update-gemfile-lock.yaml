@@ -58,11 +58,11 @@ jobs:
           # lockfile (deployment implies --frozen which blocks resolution).
           bundle config unset deployment
 
-          # Regenerate the lockfile. We update web-push and jwt because
-          # web-push 3.x requires jwt ~> 3.0 while the current lock pins
-          # jwt 2.10.x. Bundler will resolve a compatible set and write the
-          # lock without installing the gems.
-          bundle lock --update web-push jwt
+          # Regenerate the lockfile from the Gemfile. `bundle lock` (without
+          # --update) resolves the full dependency graph fresh, including the
+          # newly added web-push gem and its jwt ~> 3.0 requirement.
+          # --update would only work for gems already present in the lockfile.
+          bundle lock
 
       - name: Show lockfile diff
         shell: bash
