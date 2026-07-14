@@ -347,7 +347,7 @@ GEM
     json-schema (6.1.0)
       addressable (~> 2.8)
       bigdecimal (>= 3.1, < 5)
-    jwt (2.10.2)
+    jwt (3.2.0)
       base64
     koala (3.7.0)
       addressable
@@ -818,6 +818,9 @@ GEM
       mutex_m
       rack-proxy (~> 0.6, >= 0.6.1)
       zeitwerk (~> 2.2)
+    web-push (3.1.0)
+      jwt (~> 3.0)
+      openssl (>= 3.0)
     webauthn (3.4.3)
       android_key_attestation (~> 0.3.0)
       bindata (~> 2.4)
@@ -986,6 +989,7 @@ DEPENDENCIES
   vcr
   viewpoint
   vite_rails
+  web-push
   webauthn
   webmock
   whatsapp_sdk
