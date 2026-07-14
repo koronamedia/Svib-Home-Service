@@ -50,9 +50,19 @@ jobs:
           # shellcheck disable=SC1091
           source /etc/profile.d/rvm.sh
 
-          # Resolve and write the lockfile without installing gems.
-          # --lock-only keeps the operation fast and side-effect free.
-          bundle lock --update web-push
+          # Print bundler/ruby versions for debugging resolution failures.
+          ruby -v
+          bundle -v
+
+          # Drop into deployment-off mode so Bundler is allowed to mutate the
+          # lockfile (deployment implies --frozen which blocks resolution).
+          bundle config unset deployment
+
+          # Regenerate the lockfile. We update web-push and jwt because
+          # web-push 3.x requires jwt ~> 3.0 while the current lock pins
+          # jwt 2.10.x. Bundler will resolve a compatible set and write the
+          # lock without installing the gems.
+          bundle lock --update web-push jwt
 
       - name: Show lockfile diff
         shell: bash
