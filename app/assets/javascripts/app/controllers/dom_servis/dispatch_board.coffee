@@ -2521,29 +2521,32 @@ class App.DomServisDispatchBoard extends App.Controller
     @pushSubscribing = true
     @render()
 
-    try
-      permission = await Notification.requestPermission()
+    # Use Promise chains instead of async/await: CoffeeScript 1.x (used by
+    # Sprockets eco/coffee compiler) does not understand `await`.
+    Notification.requestPermission()
+      .then (permission) =>
+        if permission != 'granted'
+          @pushSubscribing = false
+          @render()
+          return Promise.reject(new Error('Permission denied'))
 
-      if permission != 'granted'
+        navigator.serviceWorker.ready
+      .then (registration) =>
+        registration.pushManager.subscribe(
+          userVisibleOnly: true
+          applicationServerKey: @urlBase64ToUint8Array(@vapidPublicKey())
+        )
+      .then (subscription) =>
+        @persistPushSubscription(subscription)
+      .then =>
+        @pushEnabled = true
         @pushSubscribing = false
         @render()
-        return
-
-      registration = await navigator.serviceWorker.ready
-      subscription = await registration.pushManager.subscribe(
-        userVisibleOnly: true
-        applicationServerKey: @urlBase64ToUint8Array(@vapidPublicKey())
-      )
-
-      await @persistPushSubscription(subscription)
-
-      @pushEnabled = true
-      @pushSubscribing = false
-      @render()
-    catch error
-      @pushSubscribing = false
-      @render()
-      @notifyPushError('Не удалось включить push-уведомления.')
+      .catch (error) =>
+        @pushSubscribing = false
+        @render()
+        return if error?.message == 'Permission denied'
+        @notifyPushError('Не удалось включить push-уведомления.')
 
   # Send the browser-generated PushSubscription to the backend.
   persistPushSubscription: (subscription) =>
