@@ -36,11 +36,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git identity
+        shell: bash
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Load RVM and regenerate Gemfile.lock
+        shell: bash
         run: |
           set -o errexit
           set -o pipefail
@@ -53,9 +55,11 @@ jobs:
           bundle lock --update web-push
 
       - name: Show lockfile diff
-        run: git diff -- Gemfile.lock
+        shell: bash
+        run: git diff -- Gemfile.lock || true
 
       - name: Commit updated Gemfile.lock
+        shell: bash
         run: |
           if git diff --quiet -- Gemfile.lock; then
             echo "Gemfile.lock is already up to date. Nothing to commit."
