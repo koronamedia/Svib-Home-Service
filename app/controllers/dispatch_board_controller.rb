@@ -15,8 +15,6 @@ class DispatchBoardController < ApplicationController
   skip_before_action :verify_csrf_token, only: %i[service_worker manifest]
 
   def index
-    return redirect_to('/dispatch/', status: :moved_permanently) if request.path == '/dispatch'
-
     render(layout: 'layouts/dispatch_board', locals: { locale: current_user&.preferences&.dig(:locale) })
   end
 
