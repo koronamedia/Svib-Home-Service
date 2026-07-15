@@ -30,13 +30,11 @@ class DomServis::PushSubscriptionsController < ApplicationController
       expiration_time: attributes[:expiration_time],
       user_agent:      request.user_agent,
       active:          true,
-      updated_by:      current_user,
     )
 
     authorize subscription, :create?
 
     if subscription.valid?
-      subscription.created_by = current_user if is_new_record
       subscription.save!
 
       render json: { status: 'ok', id: subscription.id }, status: (is_new_record ? :created : :ok)

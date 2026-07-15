@@ -10,8 +10,6 @@
 # Subscriptions are deactivated rather than destroyed when the push
 # service reports them as expired or invalid, keeping an audit trail.
 class DomServis::PushSubscription < ApplicationModel
-  include HasDefaultModelUserRelations
-
   self.table_name = 'dom_servis_push_subscriptions'
 
   belongs_to :user, optional: true
