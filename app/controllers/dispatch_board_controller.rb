@@ -12,7 +12,7 @@ class DispatchBoardController < ApplicationController
   # Skip CSRF protection for the manifest and service worker endpoints.
   # Both are public read-only responses and must be reachable before
   # the session-dependent app shell finishes booting.
-  skip_before_action :verify_authenticity_token, only: %i[service_worker manifest]
+  skip_before_action :verify_csrf_token, only: %i[service_worker manifest]
 
   def index
     render(layout: 'layouts/dispatch_board', locals: { locale: current_user&.preferences&.dig(:locale) })
