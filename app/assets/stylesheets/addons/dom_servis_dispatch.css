@@ -2158,6 +2158,7 @@
   }
 
   .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__mobile-role,
+  .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__mobile-push-action,
   .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__mobile-menu-toggle,
   .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__week-button,
   .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__mobile-day-card,
@@ -2182,6 +2183,23 @@
     display: inline-flex;
     gap: 8px;
     padding: 10px 12px;
+  }
+
+  .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__mobile-push-action {
+    align-items: center;
+    appearance: none;
+    border-radius: 999px;
+    color: #dce8ff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 800;
+    height: 42px;
+    justify-content: center;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    padding: 0 12px;
+    text-transform: uppercase;
   }
 
   .dom-servis-dispatch-board__shell.is-mobile .dom-servis-dispatch-board__presence-dot {

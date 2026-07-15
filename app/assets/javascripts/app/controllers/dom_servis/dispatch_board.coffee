@@ -76,7 +76,7 @@ class App.DomServisDispatchBoard extends App.Controller
     @realtimeRefreshDelayId = null
     @pushSubscribing = false
     @pushTesting = false
-    @pushEnabled = Notification?.permission is 'granted' && @pushSupported()
+    @pushEnabled = false
     @initViewportMode()
     @statusFilter = 'mine' if @mobileView && @masterAccess()
     @bindRouteWatcher()
@@ -2534,10 +2534,14 @@ class App.DomServisDispatchBoard extends App.Controller
 
         navigator.serviceWorker.ready
       .then (registration) =>
-        registration.pushManager.subscribe(
-          userVisibleOnly: true
-          applicationServerKey: @urlBase64ToUint8Array(@vapidPublicKey())
-        )
+        registration.pushManager.getSubscription()
+          .then (subscription) =>
+            return subscription if subscription
+
+            registration.pushManager.subscribe(
+              userVisibleOnly: true
+              applicationServerKey: @urlBase64ToUint8Array(@vapidPublicKey())
+            )
       .then (subscription) =>
         @persistPushSubscription(subscription)
       .then =>
