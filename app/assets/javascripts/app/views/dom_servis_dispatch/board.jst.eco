@@ -26,6 +26,16 @@
           <h1><%= @mobileShell.title %></h1>
           <p><%= @mobileBoardSummary %></p>
         </div>
+        <% if @showEnablePush || @showTestPush: %>
+          <div class="dom-servis-dispatch-board__mobile-actions">
+            <% if @showEnablePush: %>
+              <button class="btn js-enable-push"><%= @pushSubscribing ? 'Включение…' : 'Включить уведомления' %></button>
+            <% end %>
+            <% if @showTestPush: %>
+              <button class="btn btn--text js-test-push"><%= @pushTesting ? 'Отправка…' : 'Тест пуша' %></button>
+            <% end %>
+          </div>
+        <% end %>
         <div class="dom-servis-dispatch-board__mobile-workspace-filters">
           <% for item in @mobileShell.workspaceFilters: %>
             <button class="btn btn--text js-status-filter<%= ' is-active' if item.active %>" data-filter="<%= item.id %>">
