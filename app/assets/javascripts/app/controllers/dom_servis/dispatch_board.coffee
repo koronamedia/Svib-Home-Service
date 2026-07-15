@@ -132,6 +132,8 @@ class App.DomServisDispatchBoard extends App.Controller
       pushEnabled: @pushEnabled
       pushSubscribing: @pushSubscribing
       pushTesting: @pushTesting
+      showEnablePush: @pushSupported() && @vapidPublicKey() && !@pushEnabled
+      showTestPush: @pushSupported() && @vapidPublicKey() && @pushEnabled
       createDraft: @createDraft
       createAttachmentKinds: @createAttachmentKindOptions()
       createAttachmentKind: @createAttachmentKind
