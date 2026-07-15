@@ -35,7 +35,7 @@
       then pick up the hash and route straight into the board controller. %>
   <%= javascript_tag nonce: true do -%>
     if (window.location.hash.indexOf('#dom_servis/dispatch') === -1) {
-      window.location.replace('#dom_servis/dispatch');
+      window.location.replace('/dispatch/#dom_servis/dispatch');
     }
     try {
       window.__ = (str) => str;
