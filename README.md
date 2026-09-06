@@ -1,4 +1,14 @@
-# Welcome to Zammad
+# Дом-Сервис — Svib Home Service
+
+Форк Zammad с диспетчеризацией выездных работ, партнёрскими формами и уведомлениями мастеров.
+
+- [Разработчику и AI-ассистенту: начать здесь](developer.md).
+- [Установка на VPS](install.md).
+- [Конфигурация запуска](https://github.com/koronamedia/Svib-Home-Service-docker-compose).
+
+Ниже сохранено описание исходной платформы Zammad.
+
+## Welcome to Zammad
 
 Are you juggling countless customer inquiries across multiple channels?
 Struggling to keep your support team on the same page?

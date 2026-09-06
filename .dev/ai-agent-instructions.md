@@ -4,6 +4,14 @@ Purpose: Give an AI coding agent a fast, reliable mental model of this repo to s
 
 ## Summary
 
+### Dom-Servis fork
+
+Start with [developer.md](../developer.md) for this fork's architecture, API, development, testing, and release workflow.
+Read [known limitations](../doc/dom-servis/limitations.md) before changing Dom-Servis behavior.
+The operational dispatch board is currently legacy CoffeeScript/ECO; its mobile Vue route redirects to that board.
+For this board, follow the active implementation rather than assuming the general Vue-first guidance applies.
+Deployment instructions are in [install.md](../install.md).
+
 - Zammad is an open-source helpdesk/customer support platform.
   It’s a Ruby on Rails app with two modern Vue 3 frontends (desktop-view and mobile)
   and one legacy desktop-app under app/assets.
